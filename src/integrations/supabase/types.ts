@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          tenant_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          tenant_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          tenant_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dental_findings: {
         Row: {
           bbox_coordinates: Json | null
@@ -271,6 +318,50 @@ export type Database = {
           },
         ]
       }
+      tenant_plans: {
+        Row: {
+          billing_cycle_start: string
+          created_at: string
+          current_month_usage: number
+          id: string
+          is_active: boolean
+          monthly_exam_limit: number
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle_start?: string
+          created_at?: string
+          current_month_usage?: number
+          id?: string
+          is_active?: boolean
+          monthly_exam_limit?: number
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle_start?: string
+          created_at?: string
+          current_month_usage?: number
+          id?: string
+          is_active?: boolean
+          monthly_exam_limit?: number
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_plans_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string | null
@@ -303,9 +394,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_exam_quota: {
+        Args: { tenant_uuid: string }
+        Returns: boolean
+      }
       get_user_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      reset_monthly_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
@@ -316,6 +415,7 @@ export type Database = {
         | "bitewing"
         | "cephalometric"
         | "cbct"
+      plan_type: "basic" | "professional" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -451,6 +551,7 @@ export const Constants = {
         "cephalometric",
         "cbct",
       ],
+      plan_type: ["basic", "professional", "enterprise"],
     },
   },
 } as const
