@@ -14,16 +14,193 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exams: {
+        Row: {
+          ai_analysis: Json | null
+          created_at: string | null
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          findings: Json | null
+          id: string
+          metadata: Json | null
+          original_file_path: string | null
+          overlay_file_path: string | null
+          patient_id: string
+          processed_at: string | null
+          status: Database["public"]["Enums"]["exam_status"] | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          created_at?: string | null
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          findings?: Json | null
+          id?: string
+          metadata?: Json | null
+          original_file_path?: string | null
+          overlay_file_path?: string | null
+          patient_id: string
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["exam_status"] | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          created_at?: string | null
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          findings?: Json | null
+          id?: string
+          metadata?: Json | null
+          original_file_path?: string | null
+          overlay_file_path?: string | null
+          patient_id?: string
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["exam_status"] | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exams_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          age: number | null
+          created_at: string | null
+          gender: string | null
+          id: string
+          metadata: Json | null
+          patient_ref: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          metadata?: Json | null
+          patient_ref: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          metadata?: Json | null
+          patient_ref?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          settings: Json | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          settings?: Json | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      exam_status: "pending" | "processing" | "completed" | "failed"
+      exam_type:
+        | "panoramic"
+        | "periapical"
+        | "bitewing"
+        | "cephalometric"
+        | "cbct"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      exam_status: ["pending", "processing", "completed", "failed"],
+      exam_type: [
+        "panoramic",
+        "periapical",
+        "bitewing",
+        "cephalometric",
+        "cbct",
+      ],
+    },
   },
 } as const
