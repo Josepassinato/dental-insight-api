@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DentalImageViewer } from './DentalImageViewer';
+import { ReportGenerator } from './ReportGenerator';
 
 interface DentalFinding {
   id: string;
@@ -353,6 +354,13 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
 
         {/* Pipeline Status and Findings Summary */}
         <div className="space-y-6">
+          {/* Report Generator */}
+          <ReportGenerator 
+            exam={exam}
+            onReportGenerated={(url) => {
+              console.log('Report generated:', url);
+            }}
+          />
           {/* Pipeline Info */}
           <Card>
             <CardHeader>
