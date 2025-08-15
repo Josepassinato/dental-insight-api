@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.process-dental-upload]
 verify_jwt = false
+
+[functions.generate-dental-report]
+verify_jwt = false
