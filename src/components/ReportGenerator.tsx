@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
 import { 
   FileText, 
   Download, 
@@ -11,55 +10,43 @@ import {
   CheckCircle,
   AlertTriangle,
   Eye,
-  Printer
+  Share
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Exam {
-  id: string;
-  patient_id: string;
-  exam_type: string;
-  status: string;
-  total_images?: number;
-  processed_images?: number;
-  ai_analysis?: any;
-  created_at: string;
-  updated_at: string;
-  metadata?: any;
-}
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface ReportGeneratorProps {
-  exam: Exam;
+  exam: any;
   onReportGenerated?: (reportUrl: string) => void;
 }
 
 export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProps) {
   const [generating, setGenerating] = useState(false);
-  const [reportUrl, setReportUrl] = useState<string | null>(
-    exam.metadata?.report_file_path ? null : null
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [lastGenerated, setLastGenerated] = useState<string | null>(
+    exam?.metadata?.report_generated_at || null
   );
 
   const generateReport = async () => {
     setGenerating(true);
+    
     try {
-      toast.info('Iniciando geração do relatório PDF...');
-
       // Call the edge function to generate PDF report
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const response = await fetch(
         `https://blwnzwkkykaobmclsvxg.supabase.co/functions/v1/generate-dental-report/v1/exams/${exam.id}/report.pdf`,
         {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
           },
         }
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro na geração do relatório');
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+        throw new Error(errorData.error || 'Erro ao gerar relatório');
       }
 
       // Get the PDF blob
@@ -68,6 +55,15 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
       // Create download URL
       const url = URL.createObjectURL(pdfBlob);
       setReportUrl(url);
+      setLastGenerated(new Date().toISOString());
+      
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_dental_${exam.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       
       toast.success('Relatório PDF gerado com sucesso!');
       
@@ -75,7 +71,7 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
         onReportGenerated(url);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating report:', error);
       toast.error(`Erro ao gerar relatório: ${error.message}`);
     } finally {
@@ -83,183 +79,203 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
     }
   };
 
-  const downloadReport = () => {
-    if (reportUrl) {
-      const a = document.createElement('a');
-      a.href = reportUrl;
-      a.download = `relatorio_dental_${exam.patient_id}_${exam.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success('Download do relatório iniciado');
-    }
-  };
-
-  const openReport = () => {
+  const previewReport = () => {
     if (reportUrl) {
       window.open(reportUrl, '_blank');
     }
   };
 
-  const getExamStatusInfo = () => {
-    const hasFindings = exam.ai_analysis?.total_findings > 0;
-    const isComplete = exam.status === 'completed';
-    
-    return {
-      canGenerate: isComplete && exam.processed_images > 0,
-      statusText: isComplete ? 'Exame processado' : 'Processamento pendente',
-      statusColor: isComplete ? 'default' : 'secondary',
-      findingsText: hasFindings 
-        ? `${exam.ai_analysis.total_findings} achado${exam.ai_analysis.total_findings !== 1 ? 's' : ''} detectado${exam.ai_analysis.total_findings !== 1 ? 's' : ''}`
-        : 'Nenhum achado detectado'
-    };
+  const shareReport = async () => {
+    if (reportUrl) {
+      try {
+        await navigator.share({
+          title: 'Relatório de Análise Dental',
+          text: 'Relatório de análise dental gerado por IA',
+          url: reportUrl
+        });
+      } catch (error) {
+        // Fallback to copy URL
+        await navigator.clipboard.writeText(reportUrl);
+        toast.success('Link do relatório copiado!');
+      }
+    }
   };
 
-  const statusInfo = getExamStatusInfo();
+  const getFindings = () => {
+    if (!exam?.dental_images) return [];
+    
+    return exam.dental_images.flatMap((image: any) => image.findings || []);
+  };
+
+  const getSeverityCount = (severity: string) => {
+    return getFindings().filter((f: any) => f.severity === severity).length;
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Relatório PDF do Exame
+          Relatório PDF Profissional
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Exam Status Summary */}
-        <div className="space-y-3">
+      <CardContent className="space-y-6">
+        {/* Report Status */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Status do Exame:</span>
-            <Badge variant={statusInfo.statusColor as any}>
-              {statusInfo.canGenerate ? (
+            <span className="font-medium">Status do Relatório:</span>
+            {lastGenerated ? (
+              <Badge variant="default" className="bg-green-100 text-green-800">
                 <CheckCircle className="h-3 w-3 mr-1" />
-              ) : (
-                <AlertTriangle className="h-3 w-3 mr-1" />
-              )}
-              {statusInfo.statusText}
-            </Badge>
+                Disponível
+              </Badge>
+            ) : (
+              <Badge variant="secondary">
+                Não gerado
+              </Badge>
+            )}
           </div>
           
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Imagens Processadas:</span>
-            <span className="text-sm text-muted-foreground">
-              {exam.processed_images || 0} de {exam.total_images || 0}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Achados Clínicos:</span>
-            <span className="text-sm text-muted-foreground">
-              {statusInfo.findingsText}
-            </span>
-          </div>
-
-          {exam.ai_analysis?.avg_quality && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Qualidade das Imagens:</span>
-              <span className="text-sm text-muted-foreground">
-                {Math.round(exam.ai_analysis.avg_quality * 10)}/10
-              </span>
+          {lastGenerated && (
+            <div className="text-sm text-muted-foreground">
+              Última geração: {format(new Date(lastGenerated), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
             </div>
           )}
         </div>
 
         <Separator />
 
-        {/* Report Generation */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm">Relatório em PDF</h4>
+        {/* Report Preview Info */}
+        <div className="space-y-4">
+          <h4 className="font-medium">📋 Conteúdo do Relatório:</h4>
           
-          {exam.metadata?.report_generated_at && (
-            <div className="text-xs text-muted-foreground">
-              Último relatório gerado em: {' '}
-              {new Date(exam.metadata.report_generated_at).toLocaleString('pt-BR')}
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Logo e informações da clínica</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Imagens originais + overlays</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Análise detalhada por dente</span>
+              </div>
             </div>
-          )}
-
-          <div className="space-y-2">
-            {!statusInfo.canGenerate ? (
-              <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                <AlertTriangle className="h-4 w-4 inline mr-2" />
-                Aguarde o processamento completo do exame para gerar o relatório
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Explicações simplificadas</span>
               </div>
-            ) : (
-              <div className="text-sm text-muted-foreground p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <CheckCircle className="h-4 w-4 inline mr-2 text-blue-600" />
-                Exame pronto para gerar relatório detalhado com achados clínicos
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Recomendações clínicas</span>
               </div>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={generateReport}
-              disabled={!statusInfo.canGenerate || generating}
-              className="flex-1"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando PDF...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
-                </>
-              )}
-            </Button>
-
-            {reportUrl && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={downloadReport}
-                  size="sm"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={openReport}
-                  size="sm"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </>
-            )}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Resumo estatístico</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Report Features */}
-        <div className="space-y-2">
-          <h5 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-            O relatório inclui:
-          </h5>
-          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Imagens originais</span>
+        <Separator />
+
+        {/* Findings Summary */}
+        <div className="space-y-4">
+          <h4 className="font-medium">🔍 Resumo dos Achados:</h4>
+          
+          {getFindings().length === 0 ? (
+            <div className="text-center py-4 text-green-600">
+              <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+              <p className="font-medium">Nenhum achado significativo</p>
+              <p className="text-sm text-muted-foreground">Estruturas dentárias em bom estado</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Overlays com detecções</span>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-yellow-50 rounded-lg border">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {getSeverityCount('leve')}
+                </div>
+                <div className="text-sm text-yellow-700">Leves</div>
+              </div>
+              <div className="text-center p-3 bg-orange-50 rounded-lg border">
+                <div className="text-2xl font-bold text-orange-600">
+                  {getSeverityCount('moderada')}
+                </div>
+                <div className="text-sm text-orange-700">Moderadas</div>
+              </div>
+              <div className="text-center p-3 bg-red-50 rounded-lg border">
+                <div className="text-2xl font-bold text-red-600">
+                  {getSeverityCount('severa')}
+                </div>
+                <div className="text-sm text-red-700">Severas</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Lista de achados</span>
+          )}
+          
+          <div className="text-xs text-muted-foreground">
+            Total de imagens analisadas: {exam?.dental_images?.length || 0}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <Button
+            onClick={generateReport}
+            disabled={generating}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            size="lg"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Gerando Relatório...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                {lastGenerated ? 'Regenerar Relatório PDF' : 'Gerar Relatório PDF'}
+              </>
+            )}
+          </Button>
+
+          {reportUrl && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={previewReport}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={shareReport}
+                className="flex-1"
+              >
+                <Share className="h-4 w-4 mr-2" />
+                Compartilhar
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Explicações simplificadas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Recomendações</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-              <span>Logo da clínica</span>
+          )}
+        </div>
+
+        {/* Info Note */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">Relatório Profissional</p>
+              <p>
+                O relatório PDF contém análise detalhada com explicações simplificadas 
+                para o paciente e recomendações clínicas baseadas na inteligência artificial.
+              </p>
             </div>
           </div>
         </div>

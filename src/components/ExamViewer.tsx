@@ -467,6 +467,7 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
             </CardContent>
           </Card>
 
+
           {/* AI Analysis */}
           {(selectedImage?.ai_analysis || exam.ai_analysis) && (
             <Card>
