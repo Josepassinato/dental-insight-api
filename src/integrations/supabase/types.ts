@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      dental_images: {
+        Row: {
+          ai_analysis: Json | null
+          created_at: string
+          exam_id: string
+          file_path: string
+          file_size: number
+          id: string
+          image_type: string
+          mime_type: string
+          original_filename: string
+          processing_status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          created_at?: string
+          exam_id: string
+          file_path: string
+          file_size: number
+          id?: string
+          image_type?: string
+          mime_type: string
+          original_filename: string
+          processing_status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          created_at?: string
+          exam_id?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          image_type?: string
+          mime_type?: string
+          original_filename?: string
+          processing_status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dental_images_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exams: {
         Row: {
           ai_analysis: Json | null

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
-import { ExamUpload } from '@/components/ExamUpload';
+import { DentalImageUpload } from '@/components/DentalImageUpload';
 import { ExamsList } from '@/components/ExamsList';
 import { ExamViewer } from '@/components/ExamViewer';
 
@@ -27,9 +27,12 @@ interface Exam {
   exam_type: string;
   status: string;
   created_at: string;
+  updated_at: string;
   patient_id: string;
-  findings: any;
-  ai_analysis: any;
+  findings?: any;
+  ai_analysis?: any;
+  total_images?: number;
+  processed_images?: number;
 }
 
 interface DashboardProps {
@@ -270,7 +273,7 @@ const Dashboard = ({ user }: DashboardProps) => {
 
       {/* Upload Modal */}
       {showUpload && (
-        <ExamUpload 
+        <DentalImageUpload 
           onClose={() => setShowUpload(false)}
           onSuccess={handleUploadSuccess}
         />
