@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
+import { ExamUpload } from '@/components/ExamUpload';
+import { ExamsList } from '@/components/ExamsList';
+import { ExamViewer } from '@/components/ExamViewer';
 
 interface Exam {
   id: string;
@@ -37,6 +40,9 @@ const Dashboard = ({ user }: DashboardProps) => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -130,6 +136,36 @@ const Dashboard = ({ user }: DashboardProps) => {
     return types[type] || type;
   };
 
+  const handleUploadSuccess = () => {
+    setShowUpload(false);
+    setRefreshTrigger(Date.now().toString());
+    loadExams();
+    toast({
+      title: "Upload realizado com sucesso",
+      description: "As imagens foram enviadas e estão sendo processadas",
+    });
+  };
+
+  const handleExamSelect = (exam: Exam) => {
+    setSelectedExam(exam);
+  };
+
+  const handleBackFromViewer = () => {
+    setSelectedExam(null);
+    setRefreshTrigger(Date.now().toString());
+    loadExams();
+  };
+
+  if (selectedExam) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-medical-light/10 to-accent/20">
+        <div className="container mx-auto px-4 py-8">
+          <ExamViewer exam={selectedExam} onBack={handleBackFromViewer} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-medical-light/10 to-accent/20">
       {/* Header */}
@@ -172,7 +208,10 @@ const Dashboard = ({ user }: DashboardProps) => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Faça upload de uma nova imagem dental para análise
                 </p>
-                <Button className="w-full bg-gradient-to-r from-primary to-info hover:from-primary/90 hover:to-info/90">
+                <Button 
+                  className="w-full bg-gradient-to-r from-primary to-info hover:from-primary/90 hover:to-info/90"
+                  onClick={() => setShowUpload(true)}
+                >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload de Imagem
                 </Button>
@@ -222,66 +261,20 @@ const Dashboard = ({ user }: DashboardProps) => {
           </div>
 
           {/* Recent Exams */}
-          <Card className="shadow-soft border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileImage className="w-5 h-5 mr-2 text-primary" />
-                Exames Recentes
-              </CardTitle>
-              <CardDescription>
-                Últimos exames processados no sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : exams.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileImage className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Nenhum exame encontrado</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Faça upload do seu primeiro exame para começar
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {exams.map((exam) => (
-                    <div 
-                      key={exam.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-accent to-primary/20 rounded-lg flex items-center justify-center">
-                          <FileImage className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{formatExamType(exam.exam_type)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(exam.created_at).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge className={getStatusColor(exam.status)}>
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(exam.status)}
-                            <span className="capitalize">{exam.status}</span>
-                          </div>
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ExamsList 
+            refreshTrigger={refreshTrigger}
+            onExamSelect={handleExamSelect}
+          />
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUpload && (
+        <ExamUpload 
+          onClose={() => setShowUpload(false)}
+          onSuccess={handleUploadSuccess}
+        />
+      )}
     </div>
   );
 };

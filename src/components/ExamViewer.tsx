@@ -61,12 +61,22 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
 
   const fetchExamImages = async () => {
     try {
-      // Temporary mock data until dental_images table is properly set up
-      setImages([]);
-      setLoading(false);
+      const { data, error } = await supabase
+        .from('dental_images')
+        .select('*')
+        .eq('exam_id', exam.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setImages(data || []);
+      if (data && data.length > 0) {
+        setSelectedImage(data[0]);
+      }
     } catch (error) {
       console.error('Error fetching exam images:', error);
       toast.error('Erro ao carregar imagens do exame');
+    } finally {
       setLoading(false);
     }
   };
