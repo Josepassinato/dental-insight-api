@@ -139,7 +139,7 @@ const Dashboard = ({ user }: DashboardProps) => {
     return types[type] || type;
   };
 
-  const handleUploadSuccess = () => {
+  const handleUploadSuccess = (examId: string) => {
     setShowUpload(false);
     setRefreshTrigger(Date.now().toString());
     loadExams();
@@ -275,7 +275,7 @@ const Dashboard = ({ user }: DashboardProps) => {
       {showUpload && (
         <DentalImageUpload 
           onClose={() => setShowUpload(false)}
-          onSuccess={handleUploadSuccess}
+          onUploadComplete={handleUploadSuccess}
         />
       )}
     </div>

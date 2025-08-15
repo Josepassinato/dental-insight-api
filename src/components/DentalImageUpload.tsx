@@ -17,9 +17,10 @@ interface UploadFile extends File {
 
 interface DentalImageUploadProps {
   onUploadComplete?: (examId: string) => void;
+  onClose?: () => void;
 }
 
-export function DentalImageUpload({ onUploadComplete }: DentalImageUploadProps) {
+export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [patientId, setPatientId] = useState('');
   const [examType, setExamType] = useState('radiografia');
@@ -151,13 +152,21 @@ export function DentalImageUpload({ onUploadComplete }: DentalImageUploadProps) 
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileImage className="h-5 w-5" />
-          Upload de Imagens Dentais
-        </CardTitle>
-      </CardHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileImage className="h-5 w-5" />
+              Upload de Imagens Dentais
+            </CardTitle>
+            {onClose && (
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardHeader>
       <CardContent className="space-y-6">
         {/* Patient and Exam Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -269,5 +278,6 @@ export function DentalImageUpload({ onUploadComplete }: DentalImageUploadProps) 
         </Button>
       </CardContent>
     </Card>
+    </div>
   );
 }
