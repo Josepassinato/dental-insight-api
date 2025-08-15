@@ -69,58 +69,85 @@ serve(async (req) => {
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         const dataUrl = `data:${image.mime_type};base64,${base64}`;
 
-        // Advanced dental analysis with OpenAI GPT-4o (vision model)
+        // Advanced dental medical AI analysis with OpenAI GPT-5
         const analysisPrompt = `
-          Como especialista em radiologia odontológica, analise esta imagem dental e forneça:
+          Você é um especialista em radiologia odontológica com 20+ anos de experiência. Analise esta imagem dental radiográfica ou intraoral com precisão clínica e forneça um diagnóstico detalhado.
+
+          INSTRUÇÕES PARA ANÁLISE MÉDICA:
           
-          1. DETECÇÕES ESPECÍFICAS com coordenadas precisas:
-             - Cáries (localização, severidade)
-             - Perda óssea periodontal
-             - Restaurações defeituosas
-             - Cálculos dentários
-             - Gengivite/periodontite
-             - Impactações
-             - Fraturas
+          1. DIAGNÓSTICOS CLÍNICOS ESPECÍFICOS:
+             • Cáries: localização anatômica precisa, profundidade (esmalte, dentina, polpa)
+             • Doença periodontal: perda óssea horizontal/vertical, bolsas periodontais
+             • Endodontia: lesões periapicais, tratamentos radiculares, reabsorções
+             • Restaurações: integridade, adaptação marginal, recidiva de cárie
+             • Patologias: cistos, tumores, fraturas, reabsorções
+             • Ortodontia: impactações, malposicionamentos, espaços
+             • Anatomia: canais acessórios, variações anatômicas
           
-          2. Para cada detecção, especifique:
-             - tooth_number: número do dente (1-32 ou notação FDI)
-             - finding_type: tipo específico
-             - severity: "leve", "moderada", "severa"
-             - confidence: valor 0.0-1.0
-             - bbox: coordenadas {x, y, width, height} em pixels
-             - description: descrição detalhada
+          2. SISTEMA DE NUMERAÇÃO FDI (obrigatório):
+             • Use numeração FDI internacional (11-18, 21-28, 31-38, 41-48)
+             • Para decíduos: 51-55, 61-65, 71-75, 81-85
           
-          3. OVERLAY ANNOTATIONS:
-             - Cores: cáries=vermelho, perda óssea=laranja, restaurações=azul, cálculo=verde
-             - Formas: retângulos para detecções, setas para áreas de atenção
+          3. CLASSIFICAÇÃO DE SEVERIDADE CLÍNICA:
+             • leve: lesões iniciais, sem sintomatologia
+             • moderada: lesões evidentes, requer tratamento
+             • severa: lesões avançadas, urgência terapêutica
+             • critica: risco de perda dental ou complicações sistêmicas
           
-          Responda APENAS em JSON válido:
+          4. COORDENADAS PRECISAS:
+             • bbox em pixels da imagem original
+             • Marque APENAS lesões confirmadas clinicamente
+             • Confidence mínimo 0.7 para diagnósticos
+          
+          5. CORES PADRONIZADAS PARA OVERLAY:
+             • Cáries: #FF0000 (vermelho)
+             • Doença periodontal: #FF8C00 (laranja)
+             • Lesões endodônticas: #8A2BE2 (roxo)
+             • Restaurações problemáticas: #1E90FF (azul)
+             • Cálculo/tártaro: #32CD32 (verde)
+             • Fraturas: #FFD700 (dourado)
+             • Patologias: #FF1493 (rosa)
+          
+          RESPONDA EXCLUSIVAMENTE EM JSON MÉDICO VÁLIDO:
           {
             "findings": [
               {
                 "tooth_number": "16",
-                "finding_type": "carie",
-                "severity": "moderada",
-                "confidence": 0.85,
-                "bbox": {"x": 120, "y": 80, "width": 40, "height": 35},
-                "description": "Cárie oclusal em molar superior direito",
-                "color": "#FF0000"
+                "finding_type": "carie_oclusal",
+                "clinical_severity": "moderada",
+                "confidence": 0.89,
+                "bbox": {"x": 245, "y": 156, "width": 32, "height": 28},
+                "description": "Cárie oclusal cavitada em primeiro molar superior direito, atingindo dentina média. Requer tratamento restaurador direto.",
+                "clinical_recommendations": ["Restauração com resina composta", "Avaliação da vitalidade pulpar"],
+                "urgency": "moderada",
+                "icd_code": "K02.1"
               }
             ],
             "overlay_instructions": [
               {
                 "type": "rectangle",
-                "bbox": {"x": 120, "y": 80, "width": 40, "height": 35},
+                "bbox": {"x": 245, "y": 156, "width": 32, "height": 28},
                 "color": "#FF0000",
-                "thickness": 3,
-                "label": "Cárie M1"
+                "thickness": 2,
+                "label": "Cárie 16",
+                "opacity": 0.8
               }
             ],
-            "summary": {
+            "clinical_summary": {
               "total_findings": 1,
-              "severity_distribution": {"leve": 0, "moderada": 1, "severa": 0},
-              "recommendations": ["Tratamento endodôntico em M1", "Acompanhamento periodontal"],
-              "overall_score": 7.5
+              "severity_distribution": {"leve": 0, "moderada": 1, "severa": 0, "critica": 0},
+              "primary_diagnosis": "Cárie dental múltipla",
+              "treatment_priority": "moderada",
+              "estimated_treatment_sessions": 2,
+              "clinical_recommendations": [
+                "Tratamento restaurador em dente 16",
+                "Avaliação periodontal completa",
+                "Orientação de higiene oral",
+                "Retorno em 30 dias"
+              ],
+              "radiographic_quality": 8.5,
+              "diagnostic_confidence": 0.89,
+              "requires_additional_exams": false
             }
           }
         `;
@@ -171,28 +198,31 @@ serve(async (req) => {
                 tenant_id: exam.tenant_id,
                 tooth_number: finding.tooth_number,
                 finding_type: finding.finding_type,
-                severity: finding.severity,
+                severity: finding.clinical_severity || finding.severity,
                 confidence: finding.confidence,
                 bbox_coordinates: finding.bbox,
-                description: finding.description
+                description: finding.description,
+                clinical_recommendations: finding.clinical_recommendations || [],
+                urgency: finding.urgency || 'normal',
+                icd_code: finding.icd_code
               });
           }
         }
 
-        // Update image with comprehensive AI analysis
+        // Update image with comprehensive clinical AI analysis
         await supabase
           .from('dental_images')
           .update({ 
             ai_analysis: analysis,
             findings: analysis.findings || [],
-            analysis_confidence: analysis.summary?.overall_score / 10 || 0.8,
+            analysis_confidence: analysis.clinical_summary?.diagnostic_confidence || 0.8,
             overlay_file_path: overlayPath,
             processed_overlay_at: overlayPath ? new Date().toISOString() : null,
             processing_status: 'completed'
           })
           .eq('id', image.id);
 
-        analysisResults.push(analysis.summary || analysis);
+        analysisResults.push(analysis.clinical_summary || analysis.summary || analysis);
 
         console.log('Image analysis completed:', image.id);
 
@@ -209,19 +239,26 @@ serve(async (req) => {
       }
     }
 
-    // Generate comprehensive exam summary
+    // Generate comprehensive clinical exam summary
     const examSummary = {
       total_images: exam.dental_images.length,
       analyzed_images: analysisResults.length,
-      avg_quality: analysisResults.reduce((acc, r) => acc + (r.overall_score || r.pontuacao || 7), 0) / analysisResults.length,
+      radiographic_quality: analysisResults.reduce((acc, r) => acc + (r.radiographic_quality || 8), 0) / analysisResults.length,
+      diagnostic_confidence: analysisResults.reduce((acc, r) => acc + (r.diagnostic_confidence || 0.8), 0) / analysisResults.length,
       total_findings: analysisResults.reduce((acc, r) => acc + (r.total_findings || 0), 0),
       severity_breakdown: {
         leve: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.leve) || 0), 0),
         moderada: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.moderada) || 0), 0),
-        severa: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.severa) || 0), 0)
+        severa: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.severa) || 0), 0),
+        critica: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.critica) || 0), 0)
       },
-      recommendations: analysisResults.flatMap(r => r.recommendations || r.recomendacoes || []),
-      analysis_date: new Date().toISOString()
+      primary_diagnoses: [...new Set(analysisResults.map(r => r.primary_diagnosis).filter(Boolean))],
+      treatment_priorities: analysisResults.map(r => r.treatment_priority).filter(Boolean),
+      estimated_sessions: analysisResults.reduce((acc, r) => acc + (r.estimated_treatment_sessions || 0), 0),
+      clinical_recommendations: [...new Set(analysisResults.flatMap(r => r.clinical_recommendations || []))],
+      requires_additional_exams: analysisResults.some(r => r.requires_additional_exams),
+      analysis_date: new Date().toISOString(),
+      medical_summary: `Análise radiográfica completa com ${analysisResults.length} imagens processadas. Qualidade diagnóstica média: ${(analysisResults.reduce((acc, r) => acc + (r.radiographic_quality || 8), 0) / analysisResults.length).toFixed(1)}/10`
     };
 
     // Update exam with final comprehensive results
