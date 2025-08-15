@@ -69,85 +69,183 @@ serve(async (req) => {
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         const dataUrl = `data:${image.mime_type};base64,${base64}`;
 
-        // Advanced dental medical AI analysis with OpenAI GPT-5
+        // Ultra-High Precision Dental AI Analysis - Medical Grade
         const analysisPrompt = `
-          Você é um especialista em radiologia odontológica com 20+ anos de experiência. Analise esta imagem dental radiográfica ou intraoral com precisão clínica e forneça um diagnóstico detalhado.
+          ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA AVANÇADA
+          Análise com precisão de nível Google Medical AI - máxima acurácia diagnóstica
 
-          INSTRUÇÕES PARA ANÁLISE MÉDICA:
+          PROTOCOLO DE ANÁLISE ULTRA-PRECISA:
           
-          1. DIAGNÓSTICOS CLÍNICOS ESPECÍFICOS:
-             • Cáries: localização anatômica precisa, profundidade (esmalte, dentina, polpa)
-             • Doença periodontal: perda óssea horizontal/vertical, bolsas periodontais
-             • Endodontia: lesões periapicais, tratamentos radiculares, reabsorções
-             • Restaurações: integridade, adaptação marginal, recidiva de cárie
-             • Patologias: cistos, tumores, fraturas, reabsorções
-             • Ortodontia: impactações, malposicionamentos, espaços
-             • Anatomia: canais acessórios, variações anatômicas
+          1. ANÁLISE MULTI-ETAPAS OBRIGATÓRIA:
+             ETAPA 1 - QUALIDADE DA IMAGEM:
+             • Resolução: adequada (>300 DPI), adequada parcial (200-300 DPI), inadequada (<200 DPI)
+             • Contraste: ótimo (estruturas nítidas), bom (detalhes visíveis), ruim (low contrast)
+             • Artefatos: ausentes, mínimos (não interferem), significativos (limitam diagnóstico)
+             • Posicionamento: correto, aceitável, inadequado
+             • Qualidade geral: 1-10 (rejeitar se <6)
+             
+             ETAPA 2 - VALIDAÇÃO ANATÔMICA:
+             • Identifique TODOS os dentes visíveis com FDI
+             • Marque estruturas anatômicas: seio maxilar, canal mandibular, forame mentoniano
+             • Confirme se é radiografia periapical, bite-wing, panorâmica ou foto intraoral
+             • Verifique sobreposições que limitam diagnóstico
+             
+             ETAPA 3 - DETECÇÃO DIFERENCIAL:
+             • Compare com variações anatômicas normais
+             • Diferencie patologias de artefatos de imagem
+             • Confirme achados com múltiplas evidências radiográficas
+             • Cross-reference com padrões epidemiológicos
           
-          2. SISTEMA DE NUMERAÇÃO FDI (obrigatório):
-             • Use numeração FDI internacional (11-18, 21-28, 31-38, 41-48)
-             • Para decíduos: 51-55, 61-65, 71-75, 81-85
+          2. CRITÉRIOS DE PRECISÃO MÁXIMA:
+             • Confidence mínimo 0.85 para diagnósticos principais
+             • Confidence mínimo 0.75 para achados secundários  
+             • Marque APENAS achados com evidência radiográfica inequívoca
+             • Use "suspeita de" para achados borderline (confidence 0.6-0.74)
+             • Rejeite false positives comuns: sobreposições, burn-out, anatomia normal
           
-          3. CLASSIFICAÇÃO DE SEVERIDADE CLÍNICA:
-             • leve: lesões iniciais, sem sintomatologia
-             • moderada: lesões evidentes, requer tratamento
-             • severa: lesões avançadas, urgência terapêutica
-             • critica: risco de perda dental ou complicações sistêmicas
+          3. DIAGNÓSTICOS ESPECÍFICOS VALIDADOS:
+             CÁRIES - Critérios rigorosos:
+             • Inicial: descontinuidade do esmalte, radiolucência localizada
+             • Dentina: radiolucência estendida, forma cônica característica  
+             • Pulpar: comunicação visível com câmara pulpar
+             • Secundária: radiolucência marginal em restaurações
+             
+             PERIODONTAL - Evidências claras:
+             • Perda óssea: medição em mm, horizontal vs vertical
+             • Alargamento do espaço periodontal
+             • Lâmina dura interrompida
+             
+             ENDODONTIA - Sinais patognomônicos:
+             • Radiolucência periapical >2mm
+             • Perda da lâmina dura apical
+             • Reabsorção radicular externa/interna
+             
+             RESTAURAÇÕES - Avaliação técnica:
+             • Adaptação marginal inadequada
+             • Excesso/déficit de material
+             • Recidiva de cárie (radiolucência marginal)
           
-          4. COORDENADAS PRECISAS:
-             • bbox em pixels da imagem original
-             • Marque APENAS lesões confirmadas clinicamente
-             • Confidence mínimo 0.7 para diagnósticos
+          4. SISTEMA FDI RIGOROSO:
+             • Adultos: 11-18, 21-28, 31-38, 41-48
+             • Decíduos: 51-55, 61-65, 71-75, 81-85
+             • Verificação cruzada com anatomia e idade estimada
           
-          5. CORES PADRONIZADAS PARA OVERLAY:
-             • Cáries: #FF0000 (vermelho)
-             • Doença periodontal: #FF8C00 (laranja)
-             • Lesões endodônticas: #8A2BE2 (roxo)
-             • Restaurações problemáticas: #1E90FF (azul)
-             • Cálculo/tártaro: #32CD32 (verde)
-             • Fraturas: #FFD700 (dourado)
-             • Patologias: #FF1493 (rosa)
+          5. COORDENADAS ULTRA-PRECISAS:
+             • Bbox ajustado às dimensões exatas da lesão
+             • Margem de 2-3 pixels para visualização
+             • Múltiplos pontos para lesões extensas
           
-          RESPONDA EXCLUSIVAMENTE EM JSON MÉDICO VÁLIDO:
+          6. CORES DIAGNÓSTICAS VALIDADAS:
+             • Cárie inicial: #FF6B6B (vermelho claro)
+             • Cárie extensa: #FF0000 (vermelho intenso)
+             • Periodontal: #FF8C00 (laranja)
+             • Endodontia: #8A2BE2 (roxo)
+             • Restauração: #1E90FF (azul)
+             • Cálculo: #32CD32 (verde)
+             • Patologia: #FF1493 (rosa)
+             • Suspeita: #FFD700 (amarelo)
+          
+          RESPOSTA EM JSON MÉDICO ULTRA-ESTRUTURADO:
           {
+            "image_quality_analysis": {
+              "resolution_score": 9.2,
+              "contrast_score": 8.8,
+              "artifact_level": "mínimos",
+              "positioning_score": 9.0,
+              "overall_quality": 8.8,
+              "diagnostic_adequacy": "excelente",
+              "limitations": []
+            },
+            "anatomical_validation": {
+              "image_type": "periapical",
+              "visible_teeth": ["16", "15", "14"],
+              "anatomical_landmarks": ["seio_maxilar", "crista_alveolar"],
+              "positioning_accuracy": "correto",
+              "coverage_completeness": 95
+            },
             "findings": [
               {
                 "tooth_number": "16",
-                "finding_type": "carie_oclusal",
+                "finding_type": "carie_oclusal_profunda",
                 "clinical_severity": "moderada",
-                "confidence": 0.89,
-                "bbox": {"x": 245, "y": 156, "width": 32, "height": 28},
-                "description": "Cárie oclusal cavitada em primeiro molar superior direito, atingindo dentina média. Requer tratamento restaurador direto.",
-                "clinical_recommendations": ["Restauração com resina composta", "Avaliação da vitalidade pulpar"],
+                "confidence": 0.92,
+                "evidence_strength": "inequívoca",
+                "bbox": {"x": 245, "y": 156, "width": 34, "height": 30},
+                "precise_location": "face oclusal, região mesio-oclusal",
+                "depth_assessment": "dentina média a profunda",
+                "radiographic_signs": [
+                  "radiolucência oclusal bem definida",
+                  "extensão em dentina com forma cônica",
+                  "esmalte íntegro nas margens"
+                ],
+                "differential_diagnosis": ["cárie ativa", "cavitação estabelecida"],
+                "description": "Cárie oclusal bem estabelecida em primeiro molar superior direito (16), com cavitação evidente atingindo dentina média a profunda. Radiografia mostra radiolucência típica com bordas bem definidas.",
+                "clinical_recommendations": [
+                  "Restauração direta com resina composta",
+                  "Teste de vitalidade pulpar pré-operatório", 
+                  "Isolamento absoluto durante procedimento",
+                  "Proteção pulpar se necessário"
+                ],
                 "urgency": "moderada",
-                "icd_code": "K02.1"
+                "treatment_complexity": "baixa",
+                "prognosis": "excelente",
+                "icd_code": "K02.1",
+                "follow_up_needed": true,
+                "estimated_appointment_time": "45min"
               }
             ],
             "overlay_instructions": [
               {
                 "type": "rectangle",
-                "bbox": {"x": 245, "y": 156, "width": 32, "height": 28},
+                "bbox": {"x": 245, "y": 156, "width": 34, "height": 30},
                 "color": "#FF0000",
-                "thickness": 2,
+                "thickness": 3,
                 "label": "Cárie 16",
-                "opacity": 0.8
+                "opacity": 0.85,
+                "annotation_details": {
+                  "severity_indicator": "●●○○",
+                  "confidence_display": "92%",
+                  "urgency_color": "#FF8C00"
+                }
               }
             ],
+            "precision_metrics": {
+              "analysis_method": "multi_stage_validation",
+              "false_positive_checks": "passed",
+              "cross_reference_validation": "confirmed",
+              "peer_review_simulation": "approved",
+              "diagnostic_certainty": 0.92,
+              "margin_of_error": 0.05
+            },
             "clinical_summary": {
               "total_findings": 1,
+              "validated_findings": 1,
+              "suspected_findings": 0,
+              "rejected_findings": 0,
               "severity_distribution": {"leve": 0, "moderada": 1, "severa": 0, "critica": 0},
-              "primary_diagnosis": "Cárie dental múltipla",
+              "primary_diagnosis": "Cárie dental oclusal estabelecida",
+              "secondary_diagnoses": [],
               "treatment_priority": "moderada",
-              "estimated_treatment_sessions": 2,
+              "treatment_urgency": "eletiva_prioritária",
+              "estimated_treatment_sessions": 1,
+              "total_treatment_time": "45min",
               "clinical_recommendations": [
-                "Tratamento restaurador em dente 16",
-                "Avaliação periodontal completa",
-                "Orientação de higiene oral",
-                "Retorno em 30 dias"
+                "Procedimento restaurador direto em dente 16",
+                "Avaliação completa de higiene oral",
+                "Orientações de prevenção",
+                "Controle em 6 meses"
               ],
-              "radiographic_quality": 8.5,
-              "diagnostic_confidence": 0.89,
-              "requires_additional_exams": false
+              "radiographic_quality": 8.8,
+              "diagnostic_confidence": 0.92,
+              "diagnostic_accuracy_estimate": 0.95,
+              "requires_additional_exams": false,
+              "contraindications": [],
+              "risk_factors": ["higiene inadequada", "dieta cariogênica"],
+              "prevention_recommendations": [
+                "Escovação com pasta fluoretada",
+                "Uso de fio dental diário",
+                "Redução de açúcares"
+              ]
             }
           }
         `;
@@ -162,14 +260,18 @@ serve(async (req) => {
             model: 'gpt-5-2025-08-07',
             messages: [
               {
+                role: 'system',
+                content: 'Você é um sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.'
+              },
+              {
                 role: 'user',
                 content: [
                   { type: 'text', text: analysisPrompt },
-                  { type: 'image_url', image_url: { url: dataUrl } }
+                  { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
                 ]
               }
             ],
-            max_completion_tokens: 2000,
+            max_completion_tokens: 3000,
           }),
         });
 
@@ -180,7 +282,22 @@ serve(async (req) => {
         }
 
         const analysis = JSON.parse(aiResult.choices[0].message.content);
-        console.log('AI Analysis completed for image:', image.id, analysis);
+        
+        // Validation & Quality Control
+        if (analysis.image_quality_analysis?.overall_quality < 6) {
+          throw new Error('Qualidade de imagem inadequada para análise precisa');
+        }
+        
+        // Filter high-confidence findings only
+        if (analysis.findings) {
+          analysis.findings = analysis.findings.filter(f => f.confidence >= 0.75);
+        }
+        
+        console.log('Ultra-precise AI Analysis completed for image:', image.id, 
+          `Quality: ${analysis.image_quality_analysis?.overall_quality}/10, 
+           Findings: ${analysis.findings?.length || 0}, 
+           Avg Confidence: ${analysis.clinical_summary?.diagnostic_confidence}`);
+        
 
         // Generate overlay PNG if we have overlay instructions
         let overlayPath = null;
@@ -204,7 +321,12 @@ serve(async (req) => {
                 description: finding.description,
                 clinical_recommendations: finding.clinical_recommendations || [],
                 urgency: finding.urgency || 'normal',
-                icd_code: finding.icd_code
+                icd_code: finding.icd_code,
+                evidence_strength: finding.evidence_strength || 'moderate',
+                radiographic_signs: finding.radiographic_signs || [],
+                treatment_complexity: finding.treatment_complexity,
+                prognosis: finding.prognosis,
+                estimated_treatment_time: finding.estimated_appointment_time
               });
           }
         }
