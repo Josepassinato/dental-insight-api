@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental SDK - Example Integration</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .viewer-container {
+            border: 2px dashed #e5e7eb;
+            border-radius: 12px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        .viewer-container.active {
+            border: none;
+            padding: 0;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .status.info {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .code-block {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦷 Dental SDK Example</h1>
+        <p class="subtitle">Integrate dental exam viewer into your application</p>
+        
+        <!-- SDK Configuration -->
+        <div class="form-group">
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" placeholder="Enter your clinic API key" value="demo-api-key-12345">
+        </div>
+        
+        <div class="form-group">
+            <label for="baseUrl">Base URL:</label>
+            <input type="text" id="baseUrl" placeholder="https://your-dental-app.com" value="http://localhost:8080">
+        </div>
+        
+        <button onclick="initializeSDK()">Initialize SDK</button>
+        <div id="initStatus"></div>
+        
+        <!-- File Upload Section -->
+        <div style="margin-top: 30px;">
+            <h3>Upload Exam</h3>
+            <div class="form-group">
+                <label for="examFile">Select dental image:</label>
+                <input type="file" id="examFile" accept="image/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="patientName">Patient Name:</label>
+                <input type="text" id="patientName" placeholder="John Doe">
+            </div>
+            
+            <button onclick="uploadExam()" id="uploadBtn" disabled>Upload Exam</button>
+            <div id="uploadStatus"></div>
+        </div>
+        
+        <!-- Viewer Section -->
+        <div style="margin-top: 30px;">
+            <h3>Exam Viewer</h3>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('iframe')">Iframe Mode</div>
+                <div class="tab" onclick="switchTab('component')">Web Component</div>
+            </div>
+            
+            <div id="iframe-tab" class="tab-content active">
+                <div class="form-group">
+                    <label for="examId">Exam ID:</label>
+                    <input type="text" id="examId" placeholder="Enter exam ID or upload an exam first">
+                </div>
+                
+                <button onclick="openViewer('iframe')" id="iframeViewerBtn" disabled>Open Iframe Viewer</button>
+                <button onclick="closeViewer()">Close Viewer</button>
+            </div>
+            
+            <div id="component-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="examIdComponent">Exam ID:</label>
+                    <input type="text" id="examIdComponent" placeholder="Enter exam ID or upload an exam first">
+                </div>
+                
+                <button onclick="openViewer('component')" id="componentViewerBtn" disabled>Open Web Component</button>
+                <button onclick="closeViewer()">Close Viewer</button>
+            </div>
+            
+            <div id="dental-viewer-container" class="viewer-container">
+                Viewer will appear here after opening
+            </div>
+        </div>
+        
+        <!-- Integration Examples -->
+        <div style="margin-top: 40px;">
+            <h3>Integration Examples</h3>
+            
+            <h4>Basic JavaScript Integration:</h4>
+            <div class="code-block">
+// Initialize the SDK
+DentalSDK.init({
+    apiKey: 'your-clinic-api-key',
+    baseUrl: 'https://your-dental-app.com'
+});
+
+// Upload an exam
+const file = document.getElementById('fileInput').files[0];
+const result = await DentalSDK.uploadExam(file, {
+    patientName: 'John Doe',
+    dentist: 'Dr. Smith'
+});
+
+// Open viewer in iframe mode
+DentalSDK.openViewer(result.examId, {
+    containerId: 'viewer-container',
+    width: 1200,
+    height: 800,
+    mode: 'iframe'
+});
+            </div>
+            
+            <h4>Web Component Usage:</h4>
+            <div class="code-block">
+&lt;!-- After SDK initialization --&gt;
+&lt;dental-viewer 
+    exam-id="your-exam-id"
+    api-key="your-api-key"
+    base-url="https://your-dental-app.com"
+    width="1200"
+    height="800"&gt;
+&lt;/dental-viewer&gt;
+            </div>
+            
+            <h4>React Integration:</h4>
+            <div class="code-block">
+import { useEffect, useRef } from 'react';
+
+function DentalViewerComponent({ examId, apiKey }) {
+    const containerRef = useRef();
+    
+    useEffect(() => {
+        // Load SDK
+        const script = document.createElement('script');
+        script.src = '/dental-sdk.js';
+        script.onload = () => {
+            DentalSDK.init({
+                apiKey: apiKey,
+                baseUrl: 'https://your-dental-app.com'
+            });
+            
+            DentalSDK.openViewer(examId, {
+                containerId: containerRef.current.id,
+                mode: 'iframe'
+            });
+        };
+        document.head.appendChild(script);
+        
+        return () => {
+            DentalSDK.closeViewer(containerRef.current.id);
+        };
+    }, [examId, apiKey]);
+    
+    return &lt;div id="dental-viewer" ref={containerRef}&gt;&lt;/div&gt;;
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Load SDK -->
+    <script src="/dental-sdk.js"></script>
+    
+    <script>
+        let currentMode = 'iframe';
+        
+        function switchTab(mode) {
+            // Update tab appearance
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${mode === 'iframe' ? '1' : '2'})`).classList.add('active');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${mode}-tab`).classList.add('active');
+            
+            currentMode = mode;
+        }
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function initializeSDK() {
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            
+            if (!apiKey || !baseUrl) {
+                showStatus('initStatus', 'Please enter both API key and base URL', 'error');
+                return;
+            }
+            
+            try {
+                DentalSDK.init({ apiKey, baseUrl });
+                showStatus('initStatus', 'SDK initialized successfully! ✅', 'success');
+                
+                // Enable upload and viewer buttons
+                document.getElementById('uploadBtn').disabled = false;
+                document.getElementById('iframeViewerBtn').disabled = false;
+                document.getElementById('componentViewerBtn').disabled = false;
+                
+            } catch (error) {
+                showStatus('initStatus', `Initialization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function uploadExam() {
+            const fileInput = document.getElementById('examFile');
+            const patientName = document.getElementById('patientName').value;
+            
+            if (!fileInput.files.length) {
+                showStatus('uploadStatus', 'Please select a file', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('uploadStatus', 'Uploading exam...', 'info');
+                
+                const result = await DentalSDK.uploadExam(fileInput.files[0], {
+                    patientName: patientName,
+                    uploadedAt: new Date().toISOString()
+                });
+                
+                showStatus('uploadStatus', `Exam uploaded successfully! ID: ${result.examId}`, 'success');
+                
+                // Set exam ID in both inputs
+                document.getElementById('examId').value = result.examId;
+                document.getElementById('examIdComponent').value = result.examId;
+                
+            } catch (error) {
+                showStatus('uploadStatus', `Upload failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function openViewer(mode) {
+            const examId = mode === 'iframe' 
+                ? document.getElementById('examId').value 
+                : document.getElementById('examIdComponent').value;
+            
+            if (!examId) {
+                alert('Please enter an exam ID or upload an exam first');
+                return;
+            }
+            
+            try {
+                DentalSDK.openViewer(examId, {
+                    containerId: 'dental-viewer-container',
+                    width: 1200,
+                    height: 600,
+                    mode: mode
+                });
+                
+                // Update container appearance
+                const container = document.getElementById('dental-viewer-container');
+                container.classList.add('active');
+                
+            } catch (error) {
+                alert(`Failed to open viewer: ${error.message}`);
+            }
+        }
+        
+        function closeViewer() {
+            DentalSDK.closeViewer('dental-viewer-container');
+            
+            // Reset container appearance
+            const container = document.getElementById('dental-viewer-container');
+            container.classList.remove('active');
+            container.innerHTML = 'Viewer will appear here after opening';
+        }
+        
+        // Listen for messages from iframe
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'dental-viewer-ready') {
+                console.log('Dental viewer is ready:', event.data);
+            } else if (event.data.type === 'dental-viewer-error') {
+                console.error('Dental viewer error:', event.data.error);
+                alert(`Viewer error: ${event.data.error}`);
+            }
+        });
+    </script>
+</body>
+</html>

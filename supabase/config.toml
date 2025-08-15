@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.generate-dental-report]
 verify_jwt = false
+
+[functions.upload-exam-api]
+verify_jwt = false
