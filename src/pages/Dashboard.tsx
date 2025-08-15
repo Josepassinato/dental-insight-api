@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DentalImageUpload } from "@/components/DentalImageUpload";
@@ -82,7 +83,7 @@ const Dashboard = () => {
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
 
   const navigate = useNavigate();
@@ -191,13 +192,13 @@ const Dashboard = () => {
       });
     }
 
-    if (dateRange.from) {
+    if (dateRange?.from) {
       filtered = filtered.filter(exam => 
         new Date(exam.created_at) >= dateRange.from!
       );
     }
 
-    if (dateRange.to) {
+    if (dateRange?.to) {
       filtered = filtered.filter(exam => 
         new Date(exam.created_at) <= dateRange.to!
       );
@@ -411,14 +412,22 @@ const Dashboard = () => {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start">
                       <CalendarIcon className="h-4 w-4 mr-2" />
-                      {dateRange.from ? format(dateRange.from, "PPP", { locale: ptBR }) : "Selecionar data"}
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          `${format(dateRange.from, "dd/MM/yy", { locale: ptBR })} - ${format(dateRange.to, "dd/MM/yy", { locale: ptBR })}`
+                        ) : (
+                          format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
+                        )
+                      ) : (
+                        "Selecionar data"
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="range"
-                      selected={dateRange.from && dateRange.to ? dateRange : undefined}
-                      onSelect={(range) => setDateRange(range || {})}
+                      selected={dateRange}
+                      onSelect={setDateRange}
                       className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
