@@ -14,45 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      dental_findings: {
+        Row: {
+          bbox_coordinates: Json | null
+          confidence: number
+          created_at: string
+          dental_image_id: string
+          description: string | null
+          finding_type: string
+          id: string
+          severity: string
+          tenant_id: string
+          tooth_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          bbox_coordinates?: Json | null
+          confidence: number
+          created_at?: string
+          dental_image_id: string
+          description?: string | null
+          finding_type: string
+          id?: string
+          severity?: string
+          tenant_id: string
+          tooth_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bbox_coordinates?: Json | null
+          confidence?: number
+          created_at?: string
+          dental_image_id?: string
+          description?: string | null
+          finding_type?: string
+          id?: string
+          severity?: string
+          tenant_id?: string
+          tooth_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dental_findings_dental_image_id_fkey"
+            columns: ["dental_image_id"]
+            isOneToOne: false
+            referencedRelation: "dental_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dental_images: {
         Row: {
           ai_analysis: Json | null
+          analysis_confidence: number | null
           created_at: string
           exam_id: string
           file_path: string
           file_size: number
+          findings: Json | null
           id: string
           image_type: string
           mime_type: string
           original_filename: string
+          overlay_file_path: string | null
+          processed_overlay_at: string | null
           processing_status: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
           ai_analysis?: Json | null
+          analysis_confidence?: number | null
           created_at?: string
           exam_id: string
           file_path: string
           file_size: number
+          findings?: Json | null
           id?: string
           image_type?: string
           mime_type: string
           original_filename: string
+          overlay_file_path?: string | null
+          processed_overlay_at?: string | null
           processing_status?: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
           ai_analysis?: Json | null
+          analysis_confidence?: number | null
           created_at?: string
           exam_id?: string
           file_path?: string
           file_size?: number
+          findings?: Json | null
           id?: string
           image_type?: string
           mime_type?: string
           original_filename?: string
+          overlay_file_path?: string | null
+          processed_overlay_at?: string | null
           processing_status?: string
           tenant_id?: string
           updated_at?: string

@@ -12,22 +12,42 @@ import {
   Eye,
   Download,
   ZoomIn,
-  ZoomOut,
-  RotateCw
+  AlertTriangle,
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DentalImageViewer } from './DentalImageViewer';
+
+interface DentalFinding {
+  id: string;
+  tooth_number?: string;
+  finding_type: string;
+  severity: 'leve' | 'moderada' | 'severa';
+  confidence: number;
+  bbox_coordinates?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  description: string;
+}
 
 interface DentalImage {
   id: string;
   original_filename: string;
   file_path: string;
+  overlay_file_path?: string;
   file_size: number;
   mime_type: string;
   image_type: string;
   processing_status: string;
   ai_analysis?: any;
+  findings?: DentalFinding[];
+  analysis_confidence?: number;
   created_at: string;
 }
 
@@ -52,8 +72,11 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
   const [images, setImages] = useState<DentalImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<DentalImage | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [overlayUrl, setOverlayUrl] = useState<string>('');
+  const [findings, setFindings] = useState<DentalFinding[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoading, setImageLoading] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
 
   useEffect(() => {
     fetchExamImages();
@@ -84,22 +107,39 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
 
   useEffect(() => {
     if (selectedImage) {
-      loadImageUrl(selectedImage);
+      loadImageUrls(selectedImage);
     }
   }, [selectedImage]);
 
-  const loadImageUrl = async (image: DentalImage) => {
+  const loadImageUrls = async (image: DentalImage) => {
     setImageLoading(true);
     try {
-      const { data } = await supabase.storage
+      // Load original image
+      const { data: originalData } = await supabase.storage
         .from('dental-uploads')
-        .createSignedUrl(image.file_path, 3600); // 1 hour expiry
+        .createSignedUrl(image.file_path, 3600);
 
-      if (data?.signedUrl) {
-        setImageUrl(data.signedUrl);
+      if (originalData?.signedUrl) {
+        setImageUrl(originalData.signedUrl);
+      }
+
+      // Load overlay if available
+      if (image.overlay_file_path) {
+        const { data: overlayData } = await supabase.storage
+          .from('dental-overlays')
+          .createSignedUrl(image.overlay_file_path, 3600);
+
+        if (overlayData?.signedUrl) {
+          setOverlayUrl(overlayData.signedUrl);
+        }
+      }
+
+      // Load findings for this image
+      if (image.findings) {
+        setFindings(image.findings);
       }
     } catch (error) {
-      console.error('Error loading image:', error);
+      console.error('Error loading image URLs:', error);
       toast.error('Erro ao carregar imagem');
     } finally {
       setImageLoading(false);
@@ -189,32 +229,58 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  Visualização da Imagem
+                  Visualização Avançada
                 </span>
                 {selectedImage && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => downloadImage(selectedImage)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Baixar
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowImageViewer(true)}
+                    >
+                      <ZoomIn className="h-4 w-4 mr-2" />
+                      Análise Detalhada
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadImage(selectedImage)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Baixar
+                    </Button>
+                  </div>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {selectedImage ? (
                 <div className="space-y-4">
-                  <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
+                  <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
                     {imageLoading ? (
                       <Skeleton className="w-full h-full" />
                     ) : imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={selectedImage.original_filename}
-                        className="max-w-full max-h-full object-contain"
-                      />
+                      <>
+                        <img
+                          src={imageUrl}
+                          alt={selectedImage.original_filename}
+                          className="max-w-full max-h-full object-contain cursor-pointer"
+                          onClick={() => setShowImageViewer(true)}
+                        />
+                        {overlayUrl && (
+                          <img
+                            src={overlayUrl}
+                            alt="Overlay com detecções"
+                            className="absolute inset-0 max-w-full max-h-full object-contain opacity-80 pointer-events-none"
+                          />
+                        )}
+                        {findings.length > 0 && (
+                          <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {findings.length} detecção{findings.length !== 1 ? 'ões' : ''}
+                          </Badge>
+                        )}
+                      </>
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <FileImage className="h-16 w-16 mx-auto mb-4" />
@@ -223,16 +289,61 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
                     )}
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{selectedImage.original_filename}</span>
-                    <span>{formatFileSize(selectedImage.file_size)}</span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Arquivo:</span>
+                      <p className="text-muted-foreground truncate">{selectedImage.original_filename}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Tamanho:</span>
+                      <p className="text-muted-foreground">{formatFileSize(selectedImage.file_size)}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Status:</span>
+                      <Badge variant={selectedImage.processing_status === 'completed' ? 'default' : 'secondary'}>
+                        {selectedImage.processing_status === 'completed' ? 'Processada' : 'Pendente'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">Confiança:</span>
+                      <p className="text-muted-foreground">
+                        {selectedImage.analysis_confidence ? 
+                          `${Math.round(selectedImage.analysis_confidence * 100)}%` : 
+                          'N/A'
+                        }
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Quick Findings Preview */}
+                  {findings.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        <span className="font-medium">Detecções Principais:</span>
+                      </div>
+                      {findings.slice(0, 3).map((finding, index) => (
+                        <div key={finding.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm">{finding.finding_type}</span>
+                          <Badge variant={finding.severity === 'severa' ? 'destructive' : 'outline'}>
+                            {finding.severity}
+                          </Badge>
+                        </div>
+                      ))}
+                      {findings.length > 3 && (
+                        <p className="text-xs text-muted-foreground">
+                          +{findings.length - 3} detecções adicionais
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center text-muted-foreground">
                     <FileImage className="h-16 w-16 mx-auto mb-4" />
                     <p>Selecione uma imagem para visualizar</p>
+                    <p className="text-sm mt-2">Pipeline de IA avançado ativo</p>
                   </div>
                 </div>
               )}
@@ -240,8 +351,45 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Pipeline Status and Findings Summary */}
         <div className="space-y-6">
+          {/* Pipeline Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Pipeline de IA Avançado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Status:</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    ✅ Ativo
+                  </Badge>
+                </div>
+                <div className="text-sm space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3 text-red-500" />
+                    <span>Detecção de cáries</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3 text-orange-500" />
+                    <span>Análise de perda óssea</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3 text-blue-500" />
+                    <span>Restaurações defeituosas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3 text-green-500" />
+                    <span>Cálculos e gengivite</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           {/* Images List */}
           <Card>
             <CardHeader>
@@ -251,32 +399,63 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {images.map((image) => (
-                  <button
-                    key={image.id}
-                    onClick={() => setSelectedImage(image)}
-                    className={`w-full p-3 text-left rounded-lg border transition-colors ${
-                      selectedImage?.id === image.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-accent'
-                    }`}
-                  >
-                    <div className="font-medium text-sm truncate">
-                      {image.original_filename}
+              {images.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileImage className="h-12 w-12 mx-auto mb-4" />
+                  <h3 className="font-medium mb-2">Nenhuma imagem processada</h3>
+                  <p className="text-sm">
+                    Faça upload de imagens dentais para análise automática
+                  </p>
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span>Detecção automática por IA</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                      <span>{image.image_type}</span>
-                      <Badge 
-                        variant={image.processing_status === 'completed' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {image.processing_status === 'completed' ? 'Processada' : 'Pendente'}
-                      </Badge>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span>Overlays com marcações</span>
                     </div>
-                  </button>
-                ))}
-              </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span>Análise estruturada</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {images.map((image) => (
+                    <button
+                      key={image.id}
+                      onClick={() => setSelectedImage(image)}
+                      className={`w-full p-3 text-left rounded-lg border transition-colors ${
+                        selectedImage?.id === image.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:bg-accent'
+                      }`}
+                    >
+                      <div className="font-medium text-sm truncate">
+                        {image.original_filename}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                        <span>{image.image_type}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={image.processing_status === 'completed' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {image.processing_status === 'completed' ? 'Processada' : 'Pendente'}
+                          </Badge>
+                          {image.findings && image.findings.length > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {image.findings.length}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -399,6 +578,17 @@ export function ExamViewer({ exam, onBack }: ExamViewerProps) {
           )}
         </div>
       </div>
+
+      {/* Advanced Image Viewer Modal */}
+      {showImageViewer && selectedImage && imageUrl && (
+        <DentalImageViewer
+          imageId={selectedImage.id}
+          originalImageUrl={imageUrl}
+          overlayImageUrl={overlayUrl}
+          findings={findings}
+          onClose={() => setShowImageViewer(false)}
+        />
+      )}
     </div>
   );
 }
