@@ -61,7 +61,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Medical theme colors
+				'medical-blue': 'hsl(var(--medical-blue))',
+				'medical-light': 'hsl(var(--medical-light))',
+				success: 'hsl(var(--success))',
+				warning: 'hsl(var(--warning))',
+				info: 'hsl(var(--info))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
