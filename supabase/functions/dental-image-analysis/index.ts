@@ -7,7 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const openAIApiKey = Deno.env.get('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');
+const openAIApiKey =
+  Deno.env.get('OPENAI_API_KEY') ||
+  Deno.env.get('OPENAI_PROJECT_KEY') ||
+  Deno.env.get('Dental ai') ||
+  Deno.env.get('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');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -17,6 +21,13 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      console.error('Missing OpenAI API key. Please set OPENAI_API_KEY (or "Dental ai") in Supabase Edge Function secrets.');
+      return new Response(
+        JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { examId } = await req.json();
 
@@ -64,10 +75,27 @@ serve(async (req) => {
           throw new Error('Failed to download image');
         }
 
-        // Convert to base64
+        // Convert to base64 and ensure valid image MIME
         const arrayBuffer = await imageData.arrayBuffer();
         const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        const dataUrl = `data:${image.mime_type};base64,${base64}`;
+
+        const inferMimeFromPath = (path: string | undefined | null): string | null => {
+          const lower = (path || '').toLowerCase();
+          if (lower.endsWith('.png')) return 'image/png';
+          if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+          if (lower.endsWith('.webp')) return 'image/webp';
+          if (lower.endsWith('.gif')) return 'image/gif';
+          if (lower.endsWith('.bmp')) return 'image/bmp';
+          if (lower.endsWith('.tif') || lower.endsWith('.tiff')) return 'image/tiff';
+          return null;
+        };
+
+        let mime = (image?.mime_type as string) || (imageData as Blob)?.type || inferMimeFromPath(image?.file_path) || 'image/jpeg';
+        if (!mime.startsWith('image/')) {
+          mime = inferMimeFromPath(image?.file_path) || 'image/jpeg';
+        }
+
+        const dataUrl = `data:${mime};base64,${base64}`;
 
         // Ultra-High Precision Dental AI Analysis - Medical Grade
         const analysisPrompt = `
