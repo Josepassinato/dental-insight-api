@@ -51,7 +51,8 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const formData = await req.formData();
     
-    const files = formData.getAll('files') as File[];
+    const rawFiles = formData.getAll('files');
+    const files = (rawFiles.filter((f) => f instanceof File) as File[]);
     const patientId = formData.get('patientId') as string;
     const originalExamType = (formData.get('examType') as string) || '';
     const examType = mapExamType(originalExamType);
@@ -107,19 +108,33 @@ serve(async (req) => {
       const file = files[i];
       
       try {
-        // Validate file
-        if (!file || !file.type || !file.type.startsWith('image/')) {
-          throw new Error(`File ${file.name} is not a valid image`);
+        // Validate file (accept common image types and DICOM/TIFF by extension)
+        const nameLower = (file?.name || '').toLowerCase();
+        const ext = nameLower.split('.').pop() || '';
+        const isImageType = !!file?.type && file.type.startsWith('image/');
+        const isAllowedExt = ['jpg','jpeg','png','tif','tiff','dcm','dicom'].includes(ext);
+        if (!file || (!isImageType && !isAllowedExt)) {
+          throw new Error(`Unsupported file format: ${file?.name || 'unknown'}`);
         }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${examId}/${crypto.randomUUID()}.${fileExt}`;
+        const rawExt = (file.name?.split('.').pop() || '').toLowerCase();
+        const safeExt = rawExt || 'bin';
+        const fileName = `${examId}/${crypto.randomUUID()}.${safeExt}`;
+        
+        // Guess content type when missing (e.g., DICOM)
+        const guessedType = (file.type && file.type.length > 0)
+          ? file.type
+          : (safeExt === 'dcm' || safeExt === 'dicom') ? 'application/dicom'
+          : (safeExt === 'tif' || safeExt === 'tiff') ? 'image/tiff'
+          : (safeExt === 'jpg' || safeExt === 'jpeg') ? 'image/jpeg'
+          : (safeExt === 'png') ? 'image/png'
+          : 'application/octet-stream';
         
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('dental-uploads')
           .upload(fileName, file, {
-            contentType: file.type,
+            contentType: guessedType,
             upsert: false
           });
 
@@ -156,7 +171,8 @@ serve(async (req) => {
         console.log('Created image record:', imageRecord.id);
 
       } catch (error) {
-        console.error(`Error processing file ${file.name}:`, error);
+        const fname = (file && (file as any).name) ? (file as any).name : 'unknown';
+        console.error(`Error processing file ${fname}:`, error);
         // Continue with other files
       }
     }
