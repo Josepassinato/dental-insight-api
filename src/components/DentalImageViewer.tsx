@@ -39,7 +39,7 @@ interface DentalImageViewerProps {
   onClose?: () => void;
 }
 
-export function DentalImageViewer({ 
+export function DentalImageViewer({
   imageId, 
   originalImageUrl, 
   overlayImageUrl, 
