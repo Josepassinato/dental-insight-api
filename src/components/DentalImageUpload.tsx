@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, X, FileImage } from 'lucide-react';
+import { Upload, X, FileImage, User, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UploadFile extends File {
@@ -20,12 +20,54 @@ interface DentalImageUploadProps {
   onClose?: () => void;
 }
 
+interface Patient {
+  id: string;
+  patient_ref: string;
+  age?: number;
+  cpf?: string;
+}
+
 export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [patientId, setPatientId] = useState('');
   const [examType, setExamType] = useState('radiografia');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showPatientList, setShowPatientList] = useState(false);
+
+  // Carregar pacientes
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('patients')
+          .select('id, patient_ref, age, cpf')
+          .order('patient_ref');
+
+        if (error) throw error;
+        setPatients(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar pacientes:', error);
+      }
+    };
+
+    loadPatients();
+  }, []);
+
+  // Filtrar pacientes com base na busca
+  const filteredPatients = patients.filter(patient => 
+    patient.patient_ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.cpf?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectPatient = (patient: Patient) => {
+    setPatientId(patient.id);
+    setSearchTerm(patient.patient_ref);
+    setShowPatientList(false);
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles: UploadFile[] = acceptedFiles.map(file => ({
@@ -170,16 +212,56 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
       <CardContent className="space-y-6">
         {/* Patient and Exam Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="patientId">ID do Paciente</Label>
-            <Input
-              id="patientId"
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              placeholder="Digite o ID do paciente"
-              disabled={uploading}
-            />
+          <div className="space-y-2 relative">
+            <Label htmlFor="patientSearch">Selecionar Paciente</Label>
+            <div className="relative">
+              <Input
+                id="patientSearch"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowPatientList(true);
+                }}
+                onFocus={() => setShowPatientList(true)}
+                placeholder="Buscar por nome, CPF ou ID..."
+                disabled={uploading}
+                className="pr-10"
+              />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            
+            {/* Lista de pacientes */}
+            {showPatientList && searchTerm && (
+              <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {filteredPatients.length > 0 ? (
+                  filteredPatients.map((patient) => (
+                    <div
+                      key={patient.id}
+                      onClick={() => selectPatient(patient)}
+                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">{patient.patient_ref}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>ID: {patient.id.slice(0, 8)}...</span>
+                            {patient.age && <span>• {patient.age} anos</span>}
+                            {patient.cpf && <span>• {patient.cpf}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-sm text-muted-foreground text-center">
+                    Nenhum paciente encontrado
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="examType">Tipo de Exame</Label>
             <Select value={examType} onValueChange={setExamType} disabled={uploading}>
