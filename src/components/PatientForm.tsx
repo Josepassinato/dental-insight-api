@@ -244,50 +244,29 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
                     <Input
                       id="birth_date_text"
                       placeholder="dd/mm/aaaa"
-                      value={formData.birth_date ? format(new Date(formData.birth_date), 'dd/MM/yyyy') : ''}
                       onChange={(e) => {
                         const value = e.target.value;
-                        // Permite apenas números e barras
-                        const cleanValue = value.replace(/[^\d/]/g, '');
                         
-                        // Auto-formatação dd/mm/aaaa
-                        let formattedValue = cleanValue;
-                        if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
-                          formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
-                        }
-                        if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
-                          const parts = cleanValue.split('/');
-                          formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + parts[1].slice(2);
-                        }
-                        
-                        // Valida e converte para formato ISO se data válida
-                        if (formattedValue.length === 10) {
-                          const [day, month, year] = formattedValue.split('/');
-                          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                          if (date.getDate() == parseInt(day) && 
-                              date.getMonth() == parseInt(month) - 1 && 
-                              date.getFullYear() == parseInt(year) &&
-                              date <= new Date()) {
-                            const isoDate = format(date, 'yyyy-MM-dd');
-                            handleInputChange('birth_date', isoDate);
-                            const age = calculateAge(date);
-                            setBirthDate(date);
-                            setFormData(prev => ({
-                              ...prev,
-                              age: age
-                            }));
-                            return;
+                        // Tentativa de conversão para ISO quando possível
+                        if (value.length === 10 && value.includes('/')) {
+                          const [day, month, year] = value.split('/');
+                          if (day && month && year && year.length === 4) {
+                            try {
+                              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              if (!isNaN(date.getTime()) && date <= new Date()) {
+                                const isoDate = format(date, 'yyyy-MM-dd');
+                                handleInputChange('birth_date', isoDate);
+                                const age = calculateAge(date);
+                                setBirthDate(date);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  age: age
+                                }));
+                              }
+                            } catch (e) {
+                              // Ignora erros de conversão
+                            }
                           }
-                        }
-                        
-                        // Se chegou aqui, limpa os dados
-                        if (!formattedValue) {
-                          handleInputChange('birth_date', '');
-                          setBirthDate(undefined);
-                          setFormData(prev => ({
-                            ...prev,
-                            age: undefined
-                          }));
                         }
                       }}
                       className="flex-1"
