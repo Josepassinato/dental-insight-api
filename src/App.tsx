@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Integrations from "./pages/Integrations";
 import BackupExport from "./pages/BackupExport";
+import ExamDetail from "./pages/ExamDetail";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/backup" element={<BackupExport />} />
           <Route path="/users" element={<UserManagement />} />
+          <Route path="/exam/:examId" element={<ExamDetail />} />
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

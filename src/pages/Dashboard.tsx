@@ -220,6 +220,23 @@ const Dashboard = () => {
     }
   };
 
+  const getFindingTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'carie': 'Cárie',
+      'carie_oclusal': 'Cárie Oclusal',
+      'carie_proximal': 'Cárie Proximal',
+      'perda_ossea': 'Perda Óssea',
+      'restauracao_defeituosa': 'Restauração Defeituosa',
+      'calculo': 'Cálculo',
+      'gengivite': 'Gengivite',
+      'periodontite': 'Periodontite',
+      'impactacao': 'Impactação',
+      'fratura': 'Fratura',
+      'lesao_periapical': 'Lesão Periapical'
+    };
+    return labels[type] || type;
+  };
+
   const canUploadMore = () => {
     if (!tenantPlan) return true; // Allow upload if no plan data
     return tenantPlan.current_month_usage < tenantPlan.monthly_exam_limit;
@@ -506,9 +523,9 @@ const Dashboard = () => {
                             <Badge
                               key={index}
                               variant="outline"
-                              className={getSeverityColor(finding.severity)}
+                              className={getSeverityColor(finding.clinical_severity || finding.severity)}
                             >
-                              {finding.finding_type}
+                              {getFindingTypeLabel(finding.finding_type)}
                             </Badge>
                           ))
                         ) : (
@@ -529,20 +546,25 @@ const Dashboard = () => {
                       {format(new Date(exam.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-2">
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={() => setSelectedExam(exam)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
                           size="sm"
-                          variant="outline"
+                          onClick={() => navigate(`/exam/${exam.id}`)}
                         >
-                          <FileText className="h-4 w-4" />
+                          <Eye className="h-4 w-4 mr-1" />
+                          Detalhes
                         </Button>
+                        {exam.processing_status === 'completed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedExam(exam)}
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Imagem
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

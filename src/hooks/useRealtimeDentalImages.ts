@@ -15,7 +15,7 @@ export interface DentalImage {
     patient: {
       patient_ref: string;
     };
-  };
+  } | null;
 }
 
 export const useRealtimeDentalImages = () => {
