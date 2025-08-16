@@ -87,13 +87,16 @@ serve(async (req) => {
           if (lower.endsWith('.gif')) return 'image/gif';
           if (lower.endsWith('.bmp')) return 'image/bmp';
           if (lower.endsWith('.tif') || lower.endsWith('.tiff')) return 'image/tiff';
+          if (lower.endsWith('.dcm') || lower.endsWith('.dicom')) return 'application/dicom';
           return null;
         };
 
         let mime = (image?.mime_type as string) || (imageData as Blob)?.type || inferMimeFromPath(image?.file_path) || 'image/jpeg';
         if (!mime.startsWith('image/')) {
-          mime = inferMimeFromPath(image?.file_path) || 'image/jpeg';
+          // If it's DICOM or unknown, default to jpeg for analysis
+          mime = mime === 'application/dicom' ? 'image/jpeg' : (inferMimeFromPath(image?.file_path) || 'image/jpeg');
         }
+        console.log('Preparing image for AI:', { id: image.id, path: image.file_path, dbMime: image?.mime_type, blobMime: (imageData as Blob)?.type, usedMime: mime, size: (arrayBuffer?.byteLength || 0) });
 
         const dataUrl = `data:${mime};base64,${base64}`;
 

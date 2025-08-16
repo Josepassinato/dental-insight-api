@@ -121,7 +121,18 @@ serve(async (req) => {
         }
 
         const rawExt = (file.name?.split('.').pop() || '').toLowerCase();
-        const safeExt = rawExt || 'bin';
+        const typeToExt = (t: string | undefined | null): string => {
+          if (!t) return '';
+          if (t.includes('jpeg')) return 'jpg';
+          if (t.includes('png')) return 'png';
+          if (t.includes('webp')) return 'webp';
+          if (t.includes('tiff')) return 'tif';
+          if (t.includes('bmp')) return 'bmp';
+          if (t.includes('heic')) return 'heic';
+          if (t.includes('heif')) return 'heif';
+          return '';
+        };
+        const safeExt = rawExt || typeToExt(file.type) || 'jpg';
         const fileName = `${examId}/${crypto.randomUUID()}.${safeExt}`;
         
         // Guess content type when missing (e.g., DICOM)
@@ -135,7 +146,7 @@ serve(async (req) => {
           : (safeExt === 'bmp') ? 'image/bmp'
           : (safeExt === 'heic') ? 'image/heic'
           : (safeExt === 'heif') ? 'image/heif'
-          : 'application/octet-stream';
+          : 'image/jpeg';
         
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
