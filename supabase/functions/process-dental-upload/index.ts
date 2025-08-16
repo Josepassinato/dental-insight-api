@@ -108,8 +108,8 @@ serve(async (req) => {
       
       try {
         // Validate file
-        if (!file.type.startsWith('image/')) {
-          throw new Error(`File ${file.name} is not an image`);
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not a valid image`);
         }
 
         const fileExt = file.name.split('.').pop();
