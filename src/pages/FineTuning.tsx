@@ -55,9 +55,13 @@ export default function FineTuning() {
 
   const loadValidatedExamsCount = async () => {
     try {
-      // Temporary mock data to avoid TypeScript deep instantiation error
-      // This should be replaced with proper Supabase query once types are fixed
-      setValidatedExamsCount(150); // Mock value showing sufficient data for fine-tuning
+      // Use the dental-fine-tuning edge function to get validated count
+      const { data, error } = await supabase.functions.invoke('dental-fine-tuning', {
+        body: { action: 'get_validated_count' }
+      });
+
+      if (error) throw error;
+      setValidatedExamsCount(data?.count || 0);
     } catch (error) {
       console.error('Error loading validated exams:', error);
       setValidatedExamsCount(0);

@@ -305,6 +305,21 @@ serve(async (req) => {
     let result;
 
     switch (action) {
+      case 'get_validated_count':
+        // Get count of validated findings
+        const { data: findingsData, error: findingsError } = await supabase
+          .from('dental_findings')
+          .select('id')
+          .eq('expert_validated', true)
+          .gte('confidence', 0.8);
+        
+        if (findingsError) throw findingsError;
+        
+        result = {
+          count: findingsData?.length || 0
+        };
+        break;
+
       case 'start_fine_tuning':
         console.log('Starting fine-tuning process...');
         
