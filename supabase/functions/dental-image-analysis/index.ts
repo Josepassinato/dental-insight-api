@@ -388,13 +388,12 @@ serve(async (req) => {
             }
           };
         } else {
-          // Real Google Vertex AI call
-          const vertexAIResponse = await fetch(
-            `https://${gcpLocation}-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/${gcpLocation}/publishers/google/models/gemini-1.5-pro:generateContent`,
+          // Real Google Gemini API call using API key
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision-latest:generateContent?key=${apiKey}`,
             {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
