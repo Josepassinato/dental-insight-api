@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,7 +108,7 @@ serve(async (req) => {
 
         // Convert to base64 and ensure valid image MIME
         const arrayBuffer = await imageData.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const base64 = b64encode(new Uint8Array(arrayBuffer));
 
         const inferMimeFromPath = (path: string | undefined | null): string | null => {
           const lower = (path || '').toLowerCase();
