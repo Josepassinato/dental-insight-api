@@ -26,7 +26,9 @@ import {
   Filter,
   Settings,
   Plus,
-  Building2
+  Building2,
+  BarChart3,
+  Shield
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -282,6 +284,30 @@ const Dashboard = () => {
             >
               <Users className="h-4 w-4" />
               Pacientes
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/analytics")}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/settings")}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Configurações
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/users")}
+              className="flex items-center gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              Usuários
             </Button>
             <Button
               onClick={() => setShowUpload(true)}

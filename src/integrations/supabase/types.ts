@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          session_id: string | null
+          tenant_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          session_id?: string | null
+          tenant_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          session_id?: string | null
+          tenant_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -502,6 +583,39 @@ export type Database = {
           },
         ]
       }
+      tenant_settings: {
+        Row: {
+          ai_preferences: Json
+          branding_settings: Json
+          created_at: string
+          id: string
+          notification_settings: Json
+          report_settings: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_preferences?: Json
+          branding_settings?: Json
+          created_at?: string
+          id?: string
+          notification_settings?: Json
+          report_settings?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_preferences?: Json
+          branding_settings?: Json
+          created_at?: string
+          id?: string
+          notification_settings?: Json
+          report_settings?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           created_at: string | null
@@ -529,6 +643,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -538,9 +682,17 @@ export type Database = {
         Args: { tenant_uuid: string }
         Returns: boolean
       }
+      get_user_role: {
+        Args: { tenant_uuid: string; user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_user_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
       }
       reset_monthly_usage: {
         Args: Record<PropertyKey, never>
@@ -556,6 +708,7 @@ export type Database = {
         | "cephalometric"
         | "cbct"
       plan_type: "basic" | "professional" | "enterprise"
+      user_role: "admin" | "dentist" | "assistant" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -692,6 +845,7 @@ export const Constants = {
         "cbct",
       ],
       plan_type: ["basic", "professional", "enterprise"],
+      user_role: ["admin", "dentist", "assistant", "viewer"],
     },
   },
 } as const

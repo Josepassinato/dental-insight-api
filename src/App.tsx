@@ -9,6 +9,9 @@ import NotFound from "./pages/NotFound";
 import EmbedViewer from "./pages/EmbedViewer";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +26,9 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/patients" element={<Patients />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/users" element={<UserManagement />} />
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
