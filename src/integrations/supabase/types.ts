@@ -239,36 +239,140 @@ export type Database = {
           },
         ]
       }
-      patients: {
+      patient_history: {
         Row: {
-          age: number | null
-          created_at: string | null
-          gender: string | null
+          chief_complaint: string | null
+          created_at: string
+          dentist_notes: string | null
+          diagnosis: string | null
           id: string
-          metadata: Json | null
-          patient_ref: string
+          next_appointment: string | null
+          patient_id: string
           tenant_id: string
-          updated_at: string | null
+          treatment_performed: string | null
+          treatment_plan: string | null
+          updated_at: string
+          visit_date: string
+          visit_type: string
         }
         Insert: {
-          age?: number | null
-          created_at?: string | null
-          gender?: string | null
+          chief_complaint?: string | null
+          created_at?: string
+          dentist_notes?: string | null
+          diagnosis?: string | null
           id?: string
-          metadata?: Json | null
-          patient_ref: string
+          next_appointment?: string | null
+          patient_id: string
           tenant_id: string
-          updated_at?: string | null
+          treatment_performed?: string | null
+          treatment_plan?: string | null
+          updated_at?: string
+          visit_date: string
+          visit_type?: string
         }
         Update: {
+          chief_complaint?: string | null
+          created_at?: string
+          dentist_notes?: string | null
+          diagnosis?: string | null
+          id?: string
+          next_appointment?: string | null
+          patient_id?: string
+          tenant_id?: string
+          treatment_performed?: string | null
+          treatment_plan?: string | null
+          updated_at?: string
+          visit_date?: string
+          visit_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_history_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          address: string | null
+          age: number | null
+          allergies: string | null
+          birth_date: string | null
+          city: string | null
+          cpf: string | null
+          created_at: string | null
+          current_medications: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          gender: string | null
+          id: string
+          insurance_number: string | null
+          insurance_provider: string | null
+          last_visit: string | null
+          medical_conditions: string | null
+          metadata: Json | null
+          notes: string | null
+          patient_ref: string
+          phone: string | null
+          state: string | null
+          tenant_id: string
+          updated_at: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
           age?: number | null
+          allergies?: string | null
+          birth_date?: string | null
+          city?: string | null
+          cpf?: string | null
           created_at?: string | null
+          current_medications?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           gender?: string | null
           id?: string
+          insurance_number?: string | null
+          insurance_provider?: string | null
+          last_visit?: string | null
+          medical_conditions?: string | null
           metadata?: Json | null
+          notes?: string | null
+          patient_ref: string
+          phone?: string | null
+          state?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          age?: number | null
+          allergies?: string | null
+          birth_date?: string | null
+          city?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          gender?: string | null
+          id?: string
+          insurance_number?: string | null
+          insurance_provider?: string | null
+          last_visit?: string | null
+          medical_conditions?: string | null
+          metadata?: Json | null
+          notes?: string | null
           patient_ref?: string
+          phone?: string | null
+          state?: string | null
           tenant_id?: string
           updated_at?: string | null
+          zip_code?: string | null
         }
         Relationships: [
           {
@@ -317,6 +421,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          template_data: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          template_data?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          template_data?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tenant_plans: {
         Row: {

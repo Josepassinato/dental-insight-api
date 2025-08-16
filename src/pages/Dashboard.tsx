@@ -276,6 +276,14 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <Button
+              variant="outline"
+              onClick={() => navigate("/patients")}
+              className="flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Pacientes
+            </Button>
+            <Button
               onClick={() => setShowUpload(true)}
               disabled={!canUploadMore()}
               className="flex items-center gap-2"
