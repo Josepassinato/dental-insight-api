@@ -139,21 +139,41 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
         return;
       }
 
-      // Get user's tenant_id first
+      // Obter usuário e tenant_id; se ausente, configurar automaticamente
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        toast.error("Você precisa estar logado para salvar");
+        return;
+      }
+
+      // Busca o tenant_id do perfil
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('tenant_id')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .eq('id', userId)
+        .maybeSingle();
 
-      if (profileError || !profile?.tenant_id) {
-        toast.error("Erro ao obter informações do usuário");
-        return;
+      let tenantId = profile?.tenant_id as string | null;
+
+      // Se não houver tenant, define o próprio userId como tenant_id
+      if (profileError) console.warn('Erro ao buscar perfil:', profileError);
+      if (!tenantId) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ tenant_id: userId })
+          .eq('id', userId);
+        if (updateError) {
+          console.error('Erro ao definir tenant_id no perfil:', updateError);
+          toast.error("Erro ao obter informações do usuário");
+          return;
+        }
+        tenantId = userId;
       }
 
       const patientData = {
         ...formData,
-        tenant_id: profile.tenant_id,
+        tenant_id: tenantId,
         // Convert empty strings to null for optional fields
         cpf: formData.cpf || null,
         phone: formData.phone || null,
