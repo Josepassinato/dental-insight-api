@@ -99,57 +99,76 @@ class DentalAnalysisWorker:
             logger.error(f"Failed to download image from {gcs_uri}: {e}")
             raise
     
-    def prepare_image_for_vertex_ai(self, image: Image.Image) -> str:
-        """Prepare image for Vertex AI prediction"""
+    def prepare_image_for_pearl_ai(self, image: Image.Image) -> bytes:
+        """Prepare image for Pearl AI analysis - optimized for accuracy and cost"""
         try:
-            # Resize image if too large (Vertex AI has size limits)
-            max_size = 1024
-            if max(image.size) > max_size:
-                ratio = max_size / max(image.size)
+            # Pearl AI works best with high-quality images
+            # Recommended resolution: 512-2048px for optimal accuracy
+            target_size = 1024
+            
+            # Maintain aspect ratio while resizing
+            if max(image.size) > target_size:
+                ratio = target_size / max(image.size)
                 new_size = (int(image.width * ratio), int(image.height * ratio))
                 image = image.resize(new_size, Image.Resampling.LANCZOS)
             
-            # Convert to base64
-            buffer = io.BytesIO()
-            image.save(buffer, format="JPEG", quality=95)
-            image_bytes = buffer.getvalue()
+            # Convert to RGB if not already
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
             
-            return base64.b64encode(image_bytes).decode('utf-8')
+            # Convert to PNG for better quality (Pearl AI recommendation)
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG", optimize=True)
+            
+            return buffer.getvalue()
             
         except Exception as e:
-            logger.error(f"Failed to prepare image for Vertex AI: {e}")
+            logger.error(f"Failed to prepare image for Pearl AI: {e}")
             raise
     
-    async def analyze_with_vertex_ai(self, image_b64: str, tasks: List[str]) -> Dict[str, Any]:
-        """Perform dental analysis using Vertex AI"""
+    async def analyze_with_pearl_ai(self, image: Image.Image, tasks: List[str]) -> Dict[str, Any]:
+        """Perform dental analysis using Pearl AI (most cost-effective and accurate)"""
         try:
-            if not self.endpoint:
-                # Fallback to mock analysis if no Vertex AI endpoint
+            import requests
+            
+            pearl_api_key = os.environ.get('PEARL_AI_API_KEY')
+            if not pearl_api_key:
+                logger.warning("Pearl AI API key not found, using mock analysis")
                 return await self.mock_analysis(tasks)
             
-            # Prepare prediction instance
-            instance = {
-                "image": {
-                    "bytesBase64Encoded": image_b64
+            # Prepare image for Pearl AI
+            image_bytes = self.prepare_image_for_pearl_ai(image)
+            
+            # Map tasks to Pearl AI detection types
+            detection_types = self.map_tasks_to_pearl_detections(tasks)
+            
+            # Call Pearl AI Second Opinion API
+            response = requests.post(
+                'https://api.hellopearl.com/v2/detect',
+                headers={
+                    'Authorization': f'Bearer {pearl_api_key}',
+                    'Content-Type': 'application/json',
                 },
-                "parameters": {
-                    "tasks": tasks,
-                    "confidence_threshold": 0.5,
-                    "max_detections": 50
-                }
-            }
+                json={
+                    'image_data': base64.b64encode(image_bytes).decode('utf-8'),
+                    'image_format': 'png',
+                    'detections': detection_types,
+                    'confidence_threshold': 0.5,
+                    'return_overlay': True,
+                    'return_tooth_numbering': True
+                },
+                timeout=45
+            )
             
-            # Make prediction
-            response = self.endpoint.predict(instances=[instance])
-            
-            # Process predictions
-            predictions = response.predictions[0] if response.predictions else {}
-            
-            return self.process_vertex_ai_response(predictions, tasks)
-            
+            if response.status_code == 200:
+                pearl_result = response.json()
+                return self.process_pearl_ai_response(pearl_result, tasks)
+            else:
+                logger.error(f"Pearl AI API error: {response.status_code} - {response.text}")
+                return await self.mock_analysis(tasks)
+                
         except Exception as e:
-            logger.error(f"Vertex AI analysis failed: {e}")
-            # Fallback to mock analysis
+            logger.error(f"Pearl AI analysis failed: {str(e)}")
             return await self.mock_analysis(tasks)
     
     async def mock_analysis(self, tasks: List[str]) -> Dict[str, Any]:
@@ -211,22 +230,47 @@ class DentalAnalysisWorker:
             "analysis_method": "mock_analysis"
         }
     
-    def process_vertex_ai_response(self, predictions: Dict[str, Any], tasks: List[str]) -> Dict[str, Any]:
-        """Process Vertex AI response into standardized format"""
+    def map_tasks_to_pearl_detections(self, tasks: List[str]) -> List[str]:
+        """Map internal tasks to Pearl AI detection types"""
+        task_mapping = {
+            "caries_detection": ["caries"],
+            "bone_loss": ["bone_loss"],
+            "restoration_assessment": ["restorative_discrepancy"],
+            "periapical_assessment": ["periapical_radiolucency"],
+            "calculus_detection": ["calculus"],
+            "root_canal_assessment": ["root_canal_deficiency"]
+        }
+        
+        pearl_detections = []
+        for task in tasks:
+            if task in task_mapping:
+                pearl_detections.extend(task_mapping[task])
+        
+        # Default to comprehensive analysis if no specific tasks
+        if not pearl_detections:
+            pearl_detections = ["caries", "calculus", "bone_loss", "periapical_radiolucency", "root_canal_deficiency", "restorative_discrepancy"]
+        
+        return pearl_detections
+
+    def process_pearl_ai_response(self, response_data: Dict[str, Any], tasks: List[str]) -> Dict[str, Any]:
+        """Process Pearl AI response into standardized format"""
         try:
+            detections = response_data.get('detections', [])
+            overlay_url = response_data.get('overlay_url')
+            
             findings = []
             
-            # Extract detections from Vertex AI response
-            detections = predictions.get("detections", [])
-            
+            # Process Pearl AI detections
             for detection in detections:
                 finding = {
-                    "tooth_number": detection.get("tooth_id", "unknown"),
-                    "finding_type": detection.get("class_name", "unknown"),
-                    "severity": self.map_severity(detection.get("severity_score", 0.5)),
-                    "confidence": detection.get("confidence", 0.0),
-                    "coordinates": detection.get("bounding_box", {}),
-                    "description": detection.get("description", "")
+                    "tooth_number": str(detection.get('tooth_number', 'unknown')),
+                    "finding_type": detection.get('type', 'unknown'),
+                    "severity": self.map_pearl_severity(detection.get('severity', 'low')),
+                    "confidence": float(detection.get('confidence', 0.0)),
+                    "coordinates": detection.get('bounding_box', {}),
+                    "description": detection.get('description', ''),
+                    "surface": detection.get('surface', ''),
+                    "clinical_significance": detection.get('clinical_significance', '')
                 }
                 findings.append(finding)
             
@@ -235,28 +279,34 @@ class DentalAnalysisWorker:
                 "total_findings": len(findings),
                 "caries_count": len([f for f in findings if f["finding_type"] == "caries"]),
                 "bone_loss_count": len([f for f in findings if f["finding_type"] == "bone_loss"]),
-                "restoration_issues": len([f for f in findings if f["finding_type"] == "restoration_defect"])
+                "restoration_issues": len([f for f in findings if f["finding_type"] == "restorative_discrepancy"])
             }
             
             return {
                 "findings": findings,
                 "summary": summary,
-                "confidence_score": predictions.get("overall_confidence", 0.0),
-                "analysis_method": "vertex_ai"
+                "confidence_score": float(response_data.get('overall_confidence', 0.0)),
+                "analysis_method": "pearl_ai",
+                "overlay_url": overlay_url,
+                "analysis_id": response_data.get('analysis_id'),
+                "processing_time": response_data.get('processing_time_ms')
             }
             
         except Exception as e:
-            logger.error(f"Failed to process Vertex AI response: {e}")
+            logger.error(f"Failed to process Pearl AI response: {e}")
             raise
     
-    def map_severity(self, severity_score: float) -> str:
-        """Map numeric severity score to text"""
-        if severity_score >= 0.7:
-            return "severe"
-        elif severity_score >= 0.4:
-            return "moderate"
-        else:
-            return "mild"
+    def map_pearl_severity(self, severity: str) -> str:
+        """Map Pearl AI severity to standardized format"""
+        severity_map = {
+            'critical': 'severe',
+            'high': 'severe', 
+            'moderate': 'moderate',
+            'medium': 'moderate',
+            'low': 'mild',
+            'minimal': 'mild'
+        }
+        return severity_map.get(severity.lower(), 'mild')
     
     async def generate_overlay_image(self, original_image: Image.Image, findings: List[Dict[str, Any]]) -> bytes:
         """Generate overlay image with annotations"""
@@ -392,11 +442,8 @@ class DentalAnalysisWorker:
             # Download image from GCS
             original_image, image_bytes = await self.download_image_from_gcs(gcs_uri)
             
-            # Prepare image for Vertex AI
-            image_b64 = self.prepare_image_for_vertex_ai(original_image)
-            
-            # Perform analysis
-            analysis_result = await self.analyze_with_vertex_ai(image_b64, tasks)
+            # Perform analysis with Pearl AI (most cost-effective)
+            analysis_result = await self.analyze_with_pearl_ai(original_image, tasks)
             
             # Generate overlay image
             overlay_bytes = await self.generate_overlay_image(
