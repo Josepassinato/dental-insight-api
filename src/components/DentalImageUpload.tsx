@@ -70,39 +70,24 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadFile[] = acceptedFiles.map(file => ({
-      ...file,
-      id: crypto.randomUUID(),
-      preview: URL.createObjectURL(file)
-    }));
-    
-    setFiles(prev => [...prev, ...newFiles]);
-    
-    // Show preview for images
-    newFiles.forEach(file => {
-      const nameLower = (file.name || '').toLowerCase();
-      const ext = nameLower.split('.').pop() || '';
-      const extIsImage = ['jpg','jpeg','png','webp','bmp','tif','tiff','heic','heif'].includes(ext);
-      if (file.type?.startsWith('image/') || extIsImage) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, preview: reader.result as string } : f
-          ));
-        };
-        reader.readAsDataURL(file);
-      }
+    const newFiles: UploadFile[] = acceptedFiles.map((file) => {
+      const f = file as UploadFile;
+      f.id = crypto.randomUUID();
+      f.preview = URL.createObjectURL(file);
+      return f;
     });
+    setFiles((prev) => [...prev, ...newFiles]);
   }, []);
+
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'],
-      'application/dicom': ['.dcm', '.dicom']
+      'image/*': ['.jpg', '.jpeg', '.png', '.webp']
     },
     multiple: true
   });
+
 
   const removeFile = (fileId: string) => {
     setFiles(prev => {
@@ -147,8 +132,8 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
 
       // Prepare form data
       const formData = new FormData();
-      files.forEach(file => {
-        formData.append('files', file);
+      files.forEach((file, i) => {
+        formData.append('files', file, file.name || `image-${i + 1}.jpg`);
       });
       formData.append('patientId', patientId);
       formData.append('examType', examType);
@@ -302,7 +287,7 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
                 Arraste e solte imagens ou clique para selecionar
               </p>
               <p className="text-sm text-muted-foreground">
-                Suporte: JPG, PNG, TIFF, DICOM
+                Suporte: JPG, PNG, WEBP
               </p>
             </div>
           )}
