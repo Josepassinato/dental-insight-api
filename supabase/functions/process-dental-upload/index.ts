@@ -253,18 +253,23 @@ serve(async (req) => {
 
     // Start AI analysis in background if we have images
     if (uploadedImages.length > 0) {
-      EdgeRuntime.waitUntil(
-        fetch(`${supabaseUrl}/functions/v1/dental-image-analysis`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ examId }),
-        }).catch(error => {
-          console.error('Background AI analysis failed:', error);
-        })
-      );
+      try {
+        EdgeRuntime.waitUntil(
+          (async () => {
+            const { data, error } = await supabase.functions.invoke('dental-image-analysis', {
+              body: { examId },
+              headers: { 'Authorization': `Bearer ${supabaseServiceKey}` },
+            });
+            if (error) {
+              console.error('AI analysis invoke error:', error);
+            } else {
+              console.log('AI analysis started:', data);
+            }
+          })()
+        );
+      } catch (err) {
+        console.error('Failed to start AI analysis:', err);
+      }
     }
 
     return new Response(
