@@ -56,7 +56,7 @@ serve(async (req) => {
         exam_type: examType,
         status: 'pending'
       })
-      .select()
+      .select('id')
       .single();
 
     if (examError || !exam) {
