@@ -34,6 +34,19 @@ serve(async (req) => {
 
     console.log(`Processing ${files.length} files for patient ${patientId}`);
 
+    // Verify patient exists in the tenant
+    const { data: patient, error: patientError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('id', patientId)
+      .eq('tenant_id', tenantId)
+      .single();
+
+    if (patientError || !patient) {
+      console.error('Patient validation error:', patientError);
+      throw new Error(`Patient not found or does not belong to tenant: ${patientError?.message || 'Unknown error'}`);
+    }
+
     // Create exam record
     const { data: exam, error: examError } = await supabase
       .from('exams')
@@ -48,7 +61,8 @@ serve(async (req) => {
       .single();
 
     if (examError || !exam) {
-      throw new Error('Failed to create exam record');
+      console.error('Exam creation error:', examError);
+      throw new Error(`Failed to create exam record: ${examError?.message || 'Unknown error'}`);
     }
 
     console.log('Created exam:', exam.id);
