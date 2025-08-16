@@ -139,7 +139,7 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
         return;
       }
 
-      // Obter usuário e tenant_id; se ausente, configurar automaticamente
+      // Obter usuário e configurar tenant_id automaticamente se necessário
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) {
@@ -156,18 +156,37 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
 
       let tenantId = profile?.tenant_id as string | null;
 
-      // Se não houver tenant, define o próprio userId como tenant_id
-      if (profileError) console.warn('Erro ao buscar perfil:', profileError);
+      // Se não houver tenant, cria um novo tenant e atualiza o perfil
       if (!tenantId) {
+        console.log('Creating new tenant for user:', userId);
+        
+        // Criar tenant
+        const { error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            id: userId,
+            name: userData.user?.email ? `Tenant ${userData.user.email}` : `Tenant ${userId.slice(0, 8)}`,
+            slug: `tenant-${userId.slice(0, 8)}`
+          });
+
+        if (tenantError) {
+          console.error('Erro ao criar tenant:', tenantError);
+          toast.error("Erro ao configurar tenant");
+          return;
+        }
+
+        // Atualizar perfil com tenant_id
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ tenant_id: userId })
           .eq('id', userId);
+
         if (updateError) {
           console.error('Erro ao definir tenant_id no perfil:', updateError);
-          toast.error("Erro ao obter informações do usuário");
+          toast.error("Erro ao configurar perfil");
           return;
         }
+
         tenantId = userId;
       }
 
