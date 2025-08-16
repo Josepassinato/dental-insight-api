@@ -9,7 +9,8 @@ const corsHeaders = {
 };
 
 // Google Cloud credentials
-const gcpProjectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID');
+const gcpProjectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID') || 'your-project-id';
+const apiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY');
 const gcpLocation = 'us-central1'; // Região padrão para Vertex AI
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -311,9 +312,7 @@ serve(async (req) => {
           }
         `;
 
-        // Call Google Vertex AI with Gemini Pro Vision (or mock for demo)
-        const apiKey = await getGoogleAPIKey();
-        
+        // Use Google Vertex AI API key
         let analysis: any;
         
         if (apiKey === 'mock_token') {
