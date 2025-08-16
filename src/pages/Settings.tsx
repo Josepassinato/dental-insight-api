@@ -110,18 +110,67 @@ const Settings = () => {
 
   const loadSettings = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const tenantId = profile?.tenant_id as string | null;
+      if (!tenantId) {
+        toast.error("Tenant não encontrado");
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tenant_settings')
         .select('*')
-        .single();
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       if (data) {
-        setSettings(data);
+        const mapped: TenantSettings = {
+          ai_preferences: typeof (data as any).ai_preferences === 'string'
+            ? JSON.parse((data as any).ai_preferences as any)
+            : ((data as any).ai_preferences ?? {
+                confidence_threshold: 0.8,
+                auto_generate_reports: true,
+                preferred_analysis_type: "comprehensive",
+                enable_overlay_generation: true
+              }),
+          report_settings: typeof (data as any).report_settings === 'string'
+            ? JSON.parse((data as any).report_settings as any)
+            : ((data as any).report_settings ?? {
+                default_template: "professional",
+                include_patient_photos: true,
+                show_confidence_scores: true,
+                auto_sign_reports: false
+              }),
+          notification_settings: typeof (data as any).notification_settings === 'string'
+            ? JSON.parse((data as any).notification_settings as any)
+            : ((data as any).notification_settings ?? {
+                email_on_completion: true,
+                slack_integration: false,
+                webhook_url: null
+              }),
+          branding_settings: typeof (data as any).branding_settings === 'string'
+            ? JSON.parse((data as any).branding_settings as any)
+            : ((data as any).branding_settings ?? {
+                clinic_name: "",
+                logo_url: "",
+                primary_color: "#2563eb",
+                secondary_color: "#64748b"
+              }),
+        };
+        setSettings(mapped);
       } else {
-        // Create default settings if none exist
-        await createDefaultSettings();
+        await createDefaultSettings(tenantId);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -129,8 +178,8 @@ const Settings = () => {
     }
   };
 
-  const createDefaultSettings = async () => {
-    const defaultSettings = {
+  const createDefaultSettings = async (tenantId: string) => {
+    const defaultSettings: TenantSettings = {
       ai_preferences: {
         confidence_threshold: 0.8,
         auto_generate_reports: true,
@@ -156,14 +205,18 @@ const Settings = () => {
       }
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('tenant_settings')
-      .insert(defaultSettings)
-      .select()
-      .single();
+      .insert({
+        tenant_id: tenantId,
+        ai_preferences: defaultSettings.ai_preferences,
+        report_settings: defaultSettings.report_settings,
+        notification_settings: defaultSettings.notification_settings,
+        branding_settings: defaultSettings.branding_settings,
+      });
 
     if (error) throw error;
-    setSettings(data);
+    setSettings(defaultSettings);
   };
 
   const loadApiKeys = async () => {
@@ -185,11 +238,27 @@ const Settings = () => {
 
     setSaving(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const tenantId = profile?.tenant_id as string | null;
+      if (!tenantId) throw new Error('Tenant não encontrado');
+
       const { error } = await supabase
         .from('tenant_settings')
         .upsert({
-          ...settings,
-          tenant_id: undefined // Remove tenant_id for upsert
+          tenant_id: tenantId,
+          ai_preferences: settings.ai_preferences,
+          report_settings: settings.report_settings,
+          notification_settings: settings.notification_settings,
+          branding_settings: settings.branding_settings,
         });
 
       if (error) throw error;
@@ -222,14 +291,28 @@ const Settings = () => {
         byte.toString(16).padStart(2, '0')
       ).join('');
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const tenantId = profile?.tenant_id as string | null;
+      if (!tenantId) throw new Error('Tenant não encontrado');
+
       const { error } = await supabase
         .from('api_keys')
         .insert({
           name: newApiKeyName,
           key_hash: keyHashHex,
           key_prefix: keyPrefix,
-          permissions: { read: true, write: true },
-          created_by: user?.id
+          permissions: { read: true, write: true } as any,
+          created_by: userId,
+          tenant_id: tenantId,
         });
 
       if (error) throw error;

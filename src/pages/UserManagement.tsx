@@ -116,17 +116,11 @@ const UserManagement = () => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            email
-          )
-        `)
+        .select(`*`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      setUsers((data as any) || []);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error("Erro ao carregar usuários");
@@ -137,18 +131,15 @@ const UserManagement = () => {
     try {
       const { data, error } = await supabase
         .from('audit_logs')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            email
-          )
-        `)
+        .select(`*`)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setAuditLogs(data || []);
+      setAuditLogs((((data as any) || []) as any[]).map((log: any) => ({
+        ...log,
+        ip_address: String(log.ip_address ?? ''),
+      })));
     } catch (error) {
       console.error('Error loading audit logs:', error);
     }
@@ -164,7 +155,7 @@ const UserManagement = () => {
     return matchesSearch && matchesRole;
   });
 
-  const updateUserRole = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: UserRole['role']) => {
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -393,7 +384,7 @@ const UserManagement = () => {
                           <div className="flex items-center gap-2">
                             <Select
                               value={userRole.role}
-                              onValueChange={(value) => updateUserRole(userRole.user_id, value)}
+                              onValueChange={(value) => updateUserRole(userRole.user_id, value as UserRole['role'])}
                               disabled={userRole.role === 'admin' && userRole.user_id === user?.id}
                             >
                               <SelectTrigger className="w-32">

@@ -406,7 +406,11 @@ const Analytics = () => {
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="value" fill={(entry: any) => entry.color} />
+                      <Bar dataKey="value">
+                        {analytics.findingsDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
