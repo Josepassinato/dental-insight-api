@@ -311,8 +311,8 @@ serve(async (req) => {
           }
         `;
 
-        // Call OpenAI API with vision capabilities
-        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Call OpenAI Responses API (GPT-5) with image + prompt
+        const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openAIApiKey}`,
@@ -320,16 +320,12 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'gpt-5-2025-08-07',
-            messages: [
-              {
-                role: 'system',
-                content: 'Você é um sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.'
-              },
+            input: [
               {
                 role: 'user',
                 content: [
-                  { type: 'text', text: analysisPrompt },
-                  { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+                  { type: 'input_text', text: analysisPrompt },
+                  { type: 'input_image', image_url: dataUrl, detail: 'high' }
                 ]
               }
             ],
@@ -342,7 +338,27 @@ serve(async (req) => {
           throw new Error(`OpenAI error: ${aiResult.error?.message || 'Unknown error'}`);
         }
 
-        const analysis = JSON.parse(aiResult.choices[0].message.content);
+        // Extract text content robustly from Responses API
+        let contentText: string | null = null;
+        if (typeof aiResult.output_text === 'string') {
+          contentText = aiResult.output_text;
+        } else if (Array.isArray(aiResult.output)) {
+          try {
+            contentText = aiResult.output
+              .flatMap((o: any) => (o?.content || []))
+              .map((c: any) => c?.text)
+              .filter(Boolean)
+              .join('\n');
+          } catch (_) { /* ignore */ }
+        }
+        if (!contentText && aiResult?.choices?.[0]?.message?.content) {
+          contentText = aiResult.choices[0].message.content;
+        }
+        if (!contentText) {
+          throw new Error('Malformed AI response: no text content');
+        }
+
+        const analysis = JSON.parse(contentText);
 
         // Validation & Quality Control
         if (analysis.image_quality_analysis?.overall_quality < 6) {
