@@ -243,16 +243,17 @@ const Patients = () => {
               <TableBody>
                 {filteredPatients.map((patient) => (
                   <TableRow key={patient.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{patient.patient_ref}</span>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          {patient.age && <span>{patient.age} anos</span>}
-                          {patient.gender && <span>• {patient.gender}</span>}
-                          {patient.cpf && <span>• {patient.cpf}</span>}
-                        </div>
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="flex flex-col">
+                         <span className="font-medium">{patient.patient_ref}</span>
+                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                           <span className="font-mono text-xs">ID: {patient.id.slice(0, 8)}...</span>
+                           {patient.age && <span>• {patient.age} anos</span>}
+                           {patient.gender && <span>• {patient.gender}</span>}
+                           {patient.cpf && <span>• {patient.cpf}</span>}
+                         </div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {patient.phone && (
