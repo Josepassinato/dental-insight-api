@@ -157,10 +157,10 @@ serve(async (req) => {
           .insert({
             exam_id: examId,
             tenant_id: tenantId,
-            original_filename: file.name,
+            original_filename: file.name || `unnamed_file_${i + 1}.${safeExt}`,
             file_path: fileName,
-            file_size: file.size,
-            mime_type: file.type,
+            file_size: file.size || 0,
+            mime_type: file.type || guessedType,
             image_type: examType,
             processing_status: 'pending'
           })
