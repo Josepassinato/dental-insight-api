@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DentalImageUpload } from "@/components/DentalImageUpload";
 import { DentalImageViewer } from "@/components/DentalImageViewer";
+import { useRealtimeDentalImages } from "@/hooks/useRealtimeDentalImages";
 
 interface TenantPlan {
   plan_type: 'basic' | 'professional' | 'enterprise';
@@ -77,12 +78,14 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [exams, setExams] = useState<ExamData[]>([]);
-  const [filteredExams, setFilteredExams] = useState<ExamData[]>([]);
   const [tenantPlan, setTenantPlan] = useState<TenantPlan | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
+  
+  // Use realtime hook for dental images
+  const { images: realtimeImages, loading: imagesLoading } = useRealtimeDentalImages();
+  const [filteredExams, setFilteredExams] = useState<ExamData[]>([]);
   
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -123,34 +126,6 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Load exams
-      const { data: examsData, error: examsError } = await supabase
-        .from('dental_images')
-        .select(`
-          id,
-          file_path,
-          overlay_file_path,
-          original_filename,
-          processing_status,
-          findings,
-          analysis_confidence,
-          created_at,
-          exam:exams(
-            patient:patients(patient_ref)
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (examsError) throw examsError;
-      
-      const processedExams = (examsData || []).map(exam => ({
-        ...exam,
-        findings: Array.isArray(exam.findings) ? exam.findings : []
-      }));
-      
-      setExams(processedExams);
-      setFilteredExams(processedExams);
-
       // Load tenant plan
       const { data: planData, error: planError } = await supabase
         .from('tenant_plans')
@@ -174,7 +149,7 @@ const Dashboard = () => {
 
   // Filter exams based on search criteria
   useEffect(() => {
-    let filtered = [...exams];
+    let filtered = [...realtimeImages];
 
     if (searchTerm) {
       filtered = filtered.filter(exam => 
@@ -209,7 +184,7 @@ const Dashboard = () => {
     }
 
     setFilteredExams(filtered);
-  }, [exams, searchTerm, statusFilter, urgencyFilter, dateRange]);
+  }, [realtimeImages, searchTerm, statusFilter, urgencyFilter, dateRange]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -352,7 +327,7 @@ const Dashboard = () => {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{exams.length}</div>
+              <div className="text-2xl font-bold">{realtimeImages.length}</div>
               <p className="text-xs text-muted-foreground">
                 {filteredExams.length} filtrados
               </p>
@@ -394,7 +369,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {exams.filter(exam => 
+                {realtimeImages.filter(exam => 
                   Array.isArray(exam.findings) && 
                   exam.findings.some((f: any) => f.severity === 'critico')
                 ).length}
