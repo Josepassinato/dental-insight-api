@@ -311,25 +311,29 @@ serve(async (req) => {
           }
         `;
 
-        // Call OpenAI Responses API (GPT-5) with image + prompt
-        const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
+        // Call OpenAI API with vision capabilities (GPT-4o for image analysis)
+        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openAIApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-5-2025-08-07',
-            input: [
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: 'Você é um sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.'
+              },
               {
                 role: 'user',
                 content: [
-                  { type: 'input_text', text: analysisPrompt },
-                  { type: 'input_image', image_url: dataUrl, detail: 'high' }
+                  { type: 'text', text: analysisPrompt },
+                  { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
                 ]
               }
             ],
-            max_completion_tokens: 3000,
+            max_tokens: 3000,
           }),
         });
 
@@ -338,27 +342,7 @@ serve(async (req) => {
           throw new Error(`OpenAI error: ${aiResult.error?.message || 'Unknown error'}`);
         }
 
-        // Extract text content robustly from Responses API
-        let contentText: string | null = null;
-        if (typeof aiResult.output_text === 'string') {
-          contentText = aiResult.output_text;
-        } else if (Array.isArray(aiResult.output)) {
-          try {
-            contentText = aiResult.output
-              .flatMap((o: any) => (o?.content || []))
-              .map((c: any) => c?.text)
-              .filter(Boolean)
-              .join('\n');
-          } catch (_) { /* ignore */ }
-        }
-        if (!contentText && aiResult?.choices?.[0]?.message?.content) {
-          contentText = aiResult.choices[0].message.content;
-        }
-        if (!contentText) {
-          throw new Error('Malformed AI response: no text content');
-        }
-
-        const analysis = JSON.parse(contentText);
+        const analysis = JSON.parse(aiResult.choices[0].message.content);
 
         // Validation & Quality Control
         if (analysis.image_quality_analysis?.overall_quality < 6) {
