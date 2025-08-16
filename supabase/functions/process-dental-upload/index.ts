@@ -47,24 +47,24 @@ serve(async (req) => {
       throw new Error(`Patient not found or does not belong to tenant: ${patientError?.message || 'Unknown error'}`);
     }
 
-    // Create exam record
-    const { data: exam, error: examError } = await supabase
+    // Create exam record (avoid RETURNING to bypass schema cache issues)
+    const examId = crypto.randomUUID();
+    const { error: examError } = await supabase
       .from('exams')
       .insert({
+        id: examId,
         tenant_id: tenantId,
         patient_id: patientId,
         exam_type: examType,
         status: 'pending'
-      })
-      .select('id')
-      .single();
+      });
 
-    if (examError || !exam) {
+    if (examError) {
       console.error('Exam creation error:', examError);
       throw new Error(`Failed to create exam record: ${examError?.message || 'Unknown error'}`);
     }
 
-    console.log('Created exam:', exam.id);
+    console.log('Created exam:', examId);
 
     // Process each file
     const uploadedImages = [];
@@ -78,9 +78,8 @@ serve(async (req) => {
           throw new Error(`File ${file.name} is not an image`);
         }
 
-        // Generate unique filename
         const fileExt = file.name.split('.').pop();
-        const fileName = `${exam.id}/${crypto.randomUUID()}.${fileExt}`;
+        const fileName = `${examId}/${crypto.randomUUID()}.${fileExt}`;
         
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -100,7 +99,7 @@ serve(async (req) => {
         const { data: imageRecord, error: imageError } = await supabase
           .from('dental_images')
           .insert({
-            exam_id: exam.id,
+            exam_id: examId,
             tenant_id: tenantId,
             original_filename: file.name,
             file_path: fileName,
@@ -134,7 +133,7 @@ serve(async (req) => {
       .update({ 
         status: uploadedImages.length > 0 ? 'pending' : 'failed'
       })
-      .eq('id', exam.id);
+      .eq('id', examId);
 
     // Start AI analysis in background if we have images
     if (uploadedImages.length > 0) {
@@ -145,7 +144,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${supabaseServiceKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ examId: exam.id }),
+          body: JSON.stringify({ examId }),
         }).catch(error => {
           console.error('Background AI analysis failed:', error);
         })
@@ -155,7 +154,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        examId: exam.id,
+        examId,
         uploadedImages: uploadedImages.length,
         totalFiles: files.length
       }),
