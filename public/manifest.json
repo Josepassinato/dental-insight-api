@@ -1,0 +1,34 @@
+{
+  "name": "DentalAI - Análise Radiográfica Inteligente",
+  "short_name": "DentalAI",
+  "description": "Sistema de análise radiográfica dental com inteligência artificial",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["medical", "productivity", "utilities"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

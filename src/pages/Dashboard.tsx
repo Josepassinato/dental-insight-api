@@ -28,6 +28,8 @@ import {
   Plus,
   Building2,
   BarChart3,
+  Globe,
+  Archive,
   Shield
 } from "lucide-react";
 import { format } from "date-fns";
@@ -292,6 +294,22 @@ const Dashboard = () => {
             >
               <BarChart3 className="h-4 w-4" />
               Analytics
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/integrations")}
+              className="flex items-center gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              Integrações
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/backup")}
+              className="flex items-center gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              Backup
             </Button>
             <Button
               variant="outline"

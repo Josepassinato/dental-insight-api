@@ -68,7 +68,44 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .text-2xl {
+    font-size: 1.5rem;
+  }
+
+  .text-3xl {
+    font-size: 1.875rem;
+  }
+
+  /* Touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Card spacing on mobile */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Responsive tables */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
   .dark {
     --background: 210 15% 8%;

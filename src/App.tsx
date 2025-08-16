@@ -12,6 +12,8 @@ import Patients from "./pages/Patients";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Integrations from "./pages/Integrations";
+import BackupExport from "./pages/BackupExport";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/patients" element={<Patients />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/backup" element={<BackupExport />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
