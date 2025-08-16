@@ -312,11 +312,11 @@ serve(async (req) => {
         `;
 
         // Call Google Vertex AI with Gemini Pro Vision (or mock for demo)
-        const accessToken = await getGCPAccessToken();
+        const apiKey = await getGoogleAPIKey();
         
         let analysis: any;
         
-        if (accessToken === 'mock_token') {
+        if (apiKey === 'mock_token') {
           // Use mock analysis for demonstration when GCP auth fails
           console.log('Using mock analysis for demonstration');
           analysis = {
@@ -589,60 +589,20 @@ serve(async (req) => {
   }
 });
 
-// Function to get GCP access token for Vertex AI
-async function getGCPAccessToken(): Promise<string> {
+// Function to get API key for Google Vertex AI
+async function getGoogleAPIKey(): Promise<string> {
   try {
-    const serviceAccountKey = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
+    const apiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY');
     
-    if (!serviceAccountKey) {
-      throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY not configured');
+    if (!apiKey) {
+      console.error('GOOGLE_CLOUD_API_KEY not configured');
+      return 'mock_token'; // Fallback to mock for demonstration
     }
 
-    let keyData;
-    try {
-      keyData = JSON.parse(serviceAccountKey);
-    } catch (e) {
-      throw new Error('Invalid service account key format');
-    }
-
-    // Create JWT for OAuth 2.0
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: keyData.client_email,
-      scope: 'https://www.googleapis.com/auth/cloud-platform',
-      aud: 'https://oauth2.googleapis.com/token',
-      exp: now + 3600,
-      iat: now
-    };
-
-    // Simple JWT creation (in production, use a proper library)
-    const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-    const encodedPayload = btoa(JSON.stringify(payload));
-    
-    // For now, we'll use a simplified approach with Google's token endpoint
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: `${header}.${encodedPayload}.signature` // Simplified for demo
-      })
-    });
-    
-    if (!response.ok) {
-      // Fallback: use mock analysis for Edge Function environment
-      console.warn('GCP authentication failed, using mock analysis');
-      return 'mock_token';
-    }
-    
-    const data = await response.json();
-    return data.access_token;
+    return apiKey;
   } catch (error) {
-    console.error('Error getting GCP access token:', error);
-    // Return mock token to continue with analysis
-    return 'mock_token';
+    console.error('Error getting Google API key:', error);
+    return 'mock_token'; // Fallback to mock for demonstration
   }
 }
 
