@@ -54,7 +54,6 @@ serve(async (req) => {
         tenant_id: tenantId,
         patient_id: patientId,
         exam_type: examType,
-        total_images: files.length,
         status: 'pending'
       })
       .select()
@@ -133,7 +132,6 @@ serve(async (req) => {
     await supabase
       .from('exams')
       .update({ 
-        total_images: uploadedImages.length,
         status: uploadedImages.length > 0 ? 'pending' : 'failed'
       })
       .eq('id', exam.id);
