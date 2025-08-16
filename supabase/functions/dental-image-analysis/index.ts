@@ -20,16 +20,46 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let examIdGlobal: string | null = null;
+
   try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Parse body safely
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (_e) {
+      body = {};
+    }
+    const examId = body?.examId as string | undefined;
+    examIdGlobal = examId || null;
+
     if (!openAIApiKey) {
       console.error('Missing OpenAI API key. Please set OPENAI_API_KEY (or "Dental ai") in Supabase Edge Function secrets.');
+      if (examId) {
+        try {
+          await supabase
+            .from('exams')
+            .update({ status: 'failed', updated_at: new Date().toISOString() })
+            .eq('id', examId);
+          await supabase
+            .from('dental_images')
+            .update({ processing_status: 'failed', ai_analysis: { error: 'Missing OPENAI_API_KEY' } })
+            .eq('exam_id', examId);
+        } catch (markErr) {
+          console.error('Failed to mark exam/images as failed due to missing key:', markErr);
+        }
+      }
       return new Response(
         JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { examId } = await req.json();
+
+    if (!examId) {
+      throw new Error('Missing examId');
+    }
 
     console.log('Starting AI analysis for exam:', examId);
 
@@ -441,10 +471,27 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in dental-image-analysis:', error);
+
+    // Try to mark exam/images as failed so UI doesn't stay in "pending"
+    try {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      if (examIdGlobal) {
+        await supabase
+          .from('exams')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', examIdGlobal);
+        await supabase
+          .from('dental_images')
+          .update({ processing_status: 'failed', ai_analysis: { error: String((error as any)?.message || error) } })
+          .eq('exam_id', examIdGlobal);
+      }
+    } catch (markErr) {
+      console.error('Also failed to mark exam/images as failed:', markErr);
+    }
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error'
+        error: (error as any)?.message || 'Internal server error'
       }),
       {
         status: 500,
