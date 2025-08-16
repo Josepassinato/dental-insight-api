@@ -342,7 +342,15 @@ serve(async (req) => {
           throw new Error(`OpenAI error: ${aiResult.error?.message || 'Unknown error'}`);
         }
 
-        const analysis = JSON.parse(aiResult.choices[0].message.content);
+        // Sanitize and parse JSON (handle ```json fences)
+        const rawContent = String(aiResult?.choices?.[0]?.message?.content ?? '');
+        const cleaned = rawContent.replace(/```json|```/g, '').trim();
+        let analysis: any;
+        try {
+          analysis = JSON.parse(cleaned);
+        } catch (e) {
+          throw new Error('AI não retornou JSON válido para análise');
+        }
 
         // Validation & Quality Control
         if (analysis.image_quality_analysis?.overall_quality < 6) {
@@ -379,15 +387,7 @@ serve(async (req) => {
                 severity: finding.clinical_severity || finding.severity,
                 confidence: finding.confidence,
                 bbox_coordinates: finding.bbox,
-                description: finding.description,
-                clinical_recommendations: finding.clinical_recommendations || [],
-                urgency: finding.urgency || 'normal',
-                icd_code: finding.icd_code,
-                evidence_strength: finding.evidence_strength || 'moderate',
-                radiographic_signs: finding.radiographic_signs || [],
-                treatment_complexity: finding.treatment_complexity,
-                prognosis: finding.prognosis,
-                estimated_treatment_time: finding.estimated_appointment_time
+                description: finding.description
               });
           }
         }
@@ -422,26 +422,31 @@ serve(async (req) => {
       }
     }
 
-    // Generate comprehensive clinical exam summary
+    // Generate comprehensive clinical exam summary (safe against 0 images)
+    const count = analysisResults.length;
+    const sum = (sel: (r: any) => number, def = 0) => analysisResults.reduce((acc, r) => acc + (sel(r) || 0), 0);
+    const avg = (sel: (r: any) => number, def: number | null = null) => count > 0 ? sum(sel) / count : def;
     const examSummary = {
       total_images: exam.dental_images.length,
-      analyzed_images: analysisResults.length,
-      radiographic_quality: analysisResults.reduce((acc, r) => acc + (r.radiographic_quality || 8), 0) / analysisResults.length,
-      diagnostic_confidence: analysisResults.reduce((acc, r) => acc + (r.diagnostic_confidence || 0.8), 0) / analysisResults.length,
-      total_findings: analysisResults.reduce((acc, r) => acc + (r.total_findings || 0), 0),
+      analyzed_images: count,
+      radiographic_quality: avg(r => r.radiographic_quality || 8, null),
+      diagnostic_confidence: avg(r => r.diagnostic_confidence || 0.8, null),
+      total_findings: sum(r => r.total_findings || 0),
       severity_breakdown: {
-        leve: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.leve) || 0), 0),
-        moderada: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.moderada) || 0), 0),
-        severa: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.severa) || 0), 0),
-        critica: analysisResults.reduce((acc, r) => acc + ((r.severity_distribution?.critica) || 0), 0)
+        leve: sum(r => (r.severity_distribution?.leve) || 0),
+        moderada: sum(r => (r.severity_distribution?.moderada) || 0),
+        severa: sum(r => (r.severity_distribution?.severa) || 0),
+        critica: sum(r => (r.severity_distribution?.critica) || 0)
       },
       primary_diagnoses: [...new Set(analysisResults.map(r => r.primary_diagnosis).filter(Boolean))],
       treatment_priorities: analysisResults.map(r => r.treatment_priority).filter(Boolean),
-      estimated_sessions: analysisResults.reduce((acc, r) => acc + (r.estimated_treatment_sessions || 0), 0),
+      estimated_sessions: sum(r => r.estimated_treatment_sessions || 0),
       clinical_recommendations: [...new Set(analysisResults.flatMap(r => r.clinical_recommendations || []))],
       requires_additional_exams: analysisResults.some(r => r.requires_additional_exams),
       analysis_date: new Date().toISOString(),
-      medical_summary: `Análise radiográfica completa com ${analysisResults.length} imagens processadas. Qualidade diagnóstica média: ${(analysisResults.reduce((acc, r) => acc + (r.radiographic_quality || 8), 0) / analysisResults.length).toFixed(1)}/10`
+      medical_summary: count > 0
+        ? `Análise radiográfica completa com ${count} imagens processadas. Qualidade diagnóstica média: ${avg(r => r.radiographic_quality || 8, 0)?.toFixed(1)}/10`
+        : 'Nenhuma imagem foi analisada com sucesso.'
     };
 
     // Update exam with final comprehensive results
