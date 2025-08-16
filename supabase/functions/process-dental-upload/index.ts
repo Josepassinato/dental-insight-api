@@ -107,13 +107,17 @@ serve(async (req) => {
       const file = files[i];
       
       try {
-        // Validate file (accept common image types and DICOM/TIFF by extension)
-        const nameLower = (file?.name || '').toLowerCase();
+        // Validate file gently: allow unknown types/ext; warn only
+        if (!file) {
+          throw new Error('No file provided');
+        }
+        const nameLower = (file.name || '').toLowerCase();
         const ext = nameLower.split('.').pop() || '';
+        const heicLike = ['heic','heif','heics'].includes(ext);
         const isImageType = !!file?.type && file.type.startsWith('image/');
-        const isAllowedExt = ['jpg','jpeg','png','tif','tiff','dcm','dicom'].includes(ext);
-        if (!file || (!isImageType && !isAllowedExt)) {
-          throw new Error(`Unsupported file format: ${file?.name || 'unknown'}`);
+        const isAllowedExt = ['jpg','jpeg','png','webp','tif','tiff','bmp','dcm','dicom'].includes(ext) || heicLike;
+        if (!isImageType && !isAllowedExt) {
+          console.warn('Proceeding with unknown file type/ext:', { name: file.name, type: file.type });
         }
 
         const rawExt = (file.name?.split('.').pop() || '').toLowerCase();
@@ -127,6 +131,10 @@ serve(async (req) => {
           : (safeExt === 'tif' || safeExt === 'tiff') ? 'image/tiff'
           : (safeExt === 'jpg' || safeExt === 'jpeg') ? 'image/jpeg'
           : (safeExt === 'png') ? 'image/png'
+          : (safeExt === 'webp') ? 'image/webp'
+          : (safeExt === 'bmp') ? 'image/bmp'
+          : (safeExt === 'heic') ? 'image/heic'
+          : (safeExt === 'heif') ? 'image/heif'
           : 'application/octet-stream';
         
         // Upload to storage

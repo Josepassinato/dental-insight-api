@@ -80,7 +80,10 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
     
     // Show preview for images
     newFiles.forEach(file => {
-      if (file.type.startsWith('image/')) {
+      const nameLower = (file.name || '').toLowerCase();
+      const ext = nameLower.split('.').pop() || '';
+      const extIsImage = ['jpg','jpeg','png','webp','bmp','tif','tiff','heic','heif'].includes(ext);
+      if (file.type?.startsWith('image/') || extIsImage) {
         const reader = new FileReader();
         reader.onload = () => {
           setFiles(prev => prev.map(f => 
@@ -95,7 +98,8 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.tiff', '.dcm']
+      'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'],
+      'application/dicom': ['.dcm', '.dicom']
     },
     multiple: true
   });
