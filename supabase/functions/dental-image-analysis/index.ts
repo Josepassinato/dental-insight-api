@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const openAIApiKey = Deno.env.get('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');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
