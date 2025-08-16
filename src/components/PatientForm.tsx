@@ -239,30 +239,32 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Data de Nascimento</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !birthDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {birthDate ? format(birthDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={birthDate}
-                        onSelect={handleBirthDateChange}
-                        disabled={(date) => date > new Date()}
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Label htmlFor="birth_date">Data de Nascimento</Label>
+                  <Input
+                    id="birth_date"
+                    type="date"
+                    value={formData.birth_date}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange('birth_date', value);
+                      if (value) {
+                        const date = new Date(value);
+                        const age = calculateAge(date);
+                        setBirthDate(date);
+                        setFormData(prev => ({
+                          ...prev,
+                          age: age
+                        }));
+                      } else {
+                        setBirthDate(undefined);
+                        setFormData(prev => ({
+                          ...prev,
+                          age: undefined
+                        }));
+                      }
+                    }}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="age">Idade</Label>
