@@ -388,12 +388,13 @@ serve(async (req) => {
             }
           };
         } else {
-          // Real Google Gemini API call using API key
+          // Real Google Vertex AI call using API key
           const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision-latest:generateContent?key=${apiKey}`,
+            `https://us-central1-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`,
             {
               method: 'POST',
               headers: {
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -419,8 +420,8 @@ serve(async (req) => {
             }
           );
 
-          const aiResult = await vertexAIResponse.json();
-          if (!vertexAIResponse.ok) {
+          const aiResult = await geminiResponse.json();
+          if (!geminiResponse.ok) {
             throw new Error(`Vertex AI error: ${aiResult.error?.message || 'Unknown error'}`);
           }
 
