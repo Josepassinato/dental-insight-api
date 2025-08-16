@@ -128,25 +128,66 @@ serve(async (req) => {
           if (t.includes('webp')) return 'webp';
           if (t.includes('tiff')) return 'tif';
           if (t.includes('bmp')) return 'bmp';
+          if (t.includes('gif')) return 'gif';
           if (t.includes('heic')) return 'heic';
           if (t.includes('heif')) return 'heif';
+          if (t.includes('dicom') || t.includes('dcm')) return 'dcm';
           return '';
         };
-        const safeExt = rawExt || typeToExt(file.type) || 'jpg';
+        let safeExt = rawExt || typeToExt(file.type) || '';
+
+        // Sniff magic bytes to detect real mime
+        let detectedMime: string | null = null;
+        try {
+          const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+          const ascii = (bytes: number[]) => String.fromCharCode(...bytes);
+          const startsWith = (sig: number[]) => sig.every((b, i) => head[i] === b);
+          const textAt = (pos: number, txt: string) => ascii(Array.from(head.slice(pos, pos + txt.length))) === txt;
+
+          if (startsWith([0xFF, 0xD8, 0xFF])) detectedMime = 'image/jpeg';
+          else if (startsWith([0x89, 0x50, 0x4E, 0x47])) detectedMime = 'image/png';
+          else if (textAt(0, 'GIF87a') || textAt(0, 'GIF89a')) detectedMime = 'image/gif';
+          else if (textAt(0, 'BM')) detectedMime = 'image/bmp';
+          else if (textAt(0, 'II*\x00') || textAt(0, 'MM\x00*')) detectedMime = 'image/tiff';
+          else if (textAt(0, 'RIFF') && textAt(8, 'WEBP')) detectedMime = 'image/webp';
+          else if (textAt(128, 'DICM')) detectedMime = 'application/dicom';
+        } catch (_) { /* ignore */ }
+
+        // Guess content type priority: sniff > provided type > ext
+        let guessedType = detectedMime || (file.type && file.type.length > 0 ? file.type : null);
+        if (!guessedType) {
+          const extToType = (ext: string): string | null => {
+            if (ext === 'dcm' || ext === 'dicom') return 'application/dicom';
+            if (ext === 'tif' || ext === 'tiff') return 'image/tiff';
+            if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+            if (ext === 'png') return 'image/png';
+            if (ext === 'webp') return 'image/webp';
+            if (ext === 'bmp') return 'image/bmp';
+            if (ext === 'gif') return 'image/gif';
+            if (ext === 'heic') return 'image/heic';
+            if (ext === 'heif') return 'image/heif';
+            return null;
+          };
+          guessedType = extToType(safeExt) || null;
+        }
+        if (!guessedType) {
+          guessedType = 'application/octet-stream';
+        }
+        if (!safeExt) {
+          // Derive extension from detected/guessed mime
+          const mimeToExt: Record<string, string> = {
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'image/webp': 'webp',
+            'image/gif': 'gif',
+            'image/tiff': 'tif',
+            'image/bmp': 'bmp',
+            'application/dicom': 'dcm',
+          };
+          safeExt = mimeToExt[guessedType] || 'bin';
+        }
+
         const fileName = `${examId}/${crypto.randomUUID()}.${safeExt}`;
-        
-        // Guess content type when missing (e.g., DICOM)
-        const guessedType = (file.type && file.type.length > 0)
-          ? file.type
-          : (safeExt === 'dcm' || safeExt === 'dicom') ? 'application/dicom'
-          : (safeExt === 'tif' || safeExt === 'tiff') ? 'image/tiff'
-          : (safeExt === 'jpg' || safeExt === 'jpeg') ? 'image/jpeg'
-          : (safeExt === 'png') ? 'image/png'
-          : (safeExt === 'webp') ? 'image/webp'
-          : (safeExt === 'bmp') ? 'image/bmp'
-          : (safeExt === 'heic') ? 'image/heic'
-          : (safeExt === 'heif') ? 'image/heif'
-          : 'image/jpeg';
         
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -162,7 +203,11 @@ serve(async (req) => {
 
         console.log('Uploaded file:', fileName);
 
-        // Create image record
+        // Decide if AI can process this mime
+        const supportedForAI = ['image/jpeg','image/png','image/webp','image/gif'];
+        const canAnalyze = supportedForAI.includes((file.type || guessedType));
+
+        // Create image record with appropriate status
         const { data: imageRecord, error: imageError } = await supabase
           .from('dental_images')
           .insert({
@@ -173,7 +218,8 @@ serve(async (req) => {
             file_size: file.size || 0,
             mime_type: file.type || guessedType,
             image_type: examType,
-            processing_status: 'pending'
+            processing_status: canAnalyze ? 'pending' : 'failed',
+            ai_analysis: canAnalyze ? {} : { error: 'Formato não suportado para análise. Envie JPG/PNG/WEBP.' }
           })
           .select()
           .single();
@@ -185,8 +231,10 @@ serve(async (req) => {
           throw new Error('Failed to create image record');
         }
 
-        uploadedImages.push(imageRecord);
-        console.log('Created image record:', imageRecord.id);
+        if (canAnalyze) {
+          uploadedImages.push(imageRecord);
+        }
+        console.log('Created image record:', imageRecord.id, 'canAnalyze:', canAnalyze);
 
       } catch (error) {
         const fname = (file && (file as any).name) ? (file as any).name : 'unknown';
