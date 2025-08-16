@@ -8,11 +8,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const openAIApiKey =
-  Deno.env.get('OPENAI_API_KEY') ||
-  Deno.env.get('OPENAI_PROJECT_KEY') ||
-  Deno.env.get('Dental ai') ||
-  Deno.env.get('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');
+// Google Cloud credentials
+const gcpProjectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID');
+const gcpLocation = 'us-central1'; // Região padrão para Vertex AI
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -36,8 +35,8 @@ serve(async (req) => {
     const examId = body?.examId as string | undefined;
     examIdGlobal = examId || null;
 
-    if (!openAIApiKey) {
-      console.error('Missing OpenAI API key. Please set OPENAI_API_KEY (or "Dental ai") in Supabase Edge Function secrets.');
+    if (!gcpProjectId) {
+      console.error('Missing Google Cloud Project ID. Please set GOOGLE_CLOUD_PROJECT_ID in Supabase Edge Function secrets.');
       if (examId) {
         try {
           await supabase
@@ -46,14 +45,14 @@ serve(async (req) => {
             .eq('id', examId);
           await supabase
             .from('dental_images')
-            .update({ processing_status: 'failed', ai_analysis: { error: 'Missing OPENAI_API_KEY' } })
+            .update({ processing_status: 'failed', ai_analysis: { error: 'Missing GOOGLE_CLOUD_PROJECT_ID' } })
             .eq('exam_id', examId);
         } catch (markErr) {
           console.error('Failed to mark exam/images as failed due to missing key:', markErr);
         }
       }
       return new Response(
-        JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
+        JSON.stringify({ error: 'GOOGLE_CLOUD_PROJECT_ID not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -312,39 +311,47 @@ serve(async (req) => {
           }
         `;
 
-        // Call OpenAI API with vision capabilities (GPT-4o for image analysis)
-        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: 'system',
-                content: 'Você é um sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.'
-              },
-              {
+        // Call Google Vertex AI with Gemini Pro Vision
+        const accessToken = await getGCPAccessToken();
+        
+        const vertexAIResponse = await fetch(
+          `https://${gcpLocation}-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/${gcpLocation}/publishers/google/models/gemini-1.5-pro:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
                 role: 'user',
-                content: [
-                  { type: 'text', text: analysisPrompt },
-                  { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+                parts: [
+                  { text: `Sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.\n\n${analysisPrompt}` },
+                  { 
+                    inline_data: {
+                      mime_type: mime,
+                      data: base64
+                    }
+                  }
                 ]
+              }],
+              generation_config: {
+                max_output_tokens: 3000,
+                temperature: 0.1,
+                top_p: 0.95,
+                top_k: 20
               }
-            ],
-            max_tokens: 3000,
-          }),
-        });
+            }),
+          }
+        );
 
-        const aiResult = await openAIResponse.json();
-        if (!openAIResponse.ok) {
-          throw new Error(`OpenAI error: ${aiResult.error?.message || 'Unknown error'}`);
+        const aiResult = await vertexAIResponse.json();
+        if (!vertexAIResponse.ok) {
+          throw new Error(`Vertex AI error: ${aiResult.error?.message || 'Unknown error'}`);
         }
 
-        // Sanitize and parse JSON (handle ```json fences)
-        const rawContent = String(aiResult?.choices?.[0]?.message?.content ?? '');
+        // Parse Vertex AI response
+        const rawContent = String(aiResult?.candidates?.[0]?.content?.parts?.[0]?.text ?? '');
         const cleaned = rawContent.replace(/```json|```/g, '').trim();
         let analysis: any;
         try {
@@ -363,7 +370,7 @@ serve(async (req) => {
           analysis.findings = analysis.findings.filter(f => f.confidence >= 0.75);
         }
         
-        console.log('Ultra-precise AI Analysis completed for image:', image.id, 
+        console.log('Google Vertex AI Analysis completed for image:', image.id, 
           `Quality: ${analysis.image_quality_analysis?.overall_quality}/10, 
            Findings: ${analysis.findings?.length || 0}, 
            Avg Confidence: ${analysis.clinical_summary?.diagnostic_confidence}`);
@@ -506,6 +513,31 @@ serve(async (req) => {
     );
   }
 });
+
+// Function to get GCP access token for Vertex AI
+async function getGCPAccessToken(): Promise<string> {
+  try {
+    // Get metadata service token for the default service account
+    const response = await fetch(
+      'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+      {
+        headers: {
+          'Metadata-Flavor': 'Google'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to get access token from metadata service');
+    }
+    
+    const data = await response.json();
+    return data.access_token;
+  } catch (error) {
+    console.error('Error getting GCP access token:', error);
+    throw new Error('Unable to authenticate with Google Cloud');
+  }
+}
 
 // Function to generate overlay PNG with detections
 async function generateOverlay(image: any, overlayInstructions: any[], supabase: any): Promise<string | null> {
