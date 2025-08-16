@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  FileText, 
-  Download, 
-  Loader2, 
-  CheckCircle,
-  AlertTriangle,
-  Eye,
-  Share
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, FileText, Download, RefreshCw, Settings, Eye, Palette } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
+
+interface Exam {
+  id: string;
+  patient?: {
+    patient_ref: string;
+  };
+  metadata?: any;
+}
+
+interface ReportTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  template_data: any;
+  is_default: boolean;
+}
 
 interface ReportGeneratorProps {
-  exam: any;
+  exam: Exam;
   onReportGenerated?: (reportUrl: string) => void;
 }
 
@@ -28,54 +40,107 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
   const [lastGenerated, setLastGenerated] = useState<string | null>(
     exam?.metadata?.report_generated_at || null
   );
+  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [customizations, setCustomizations] = useState({
+    showImages: true,
+    showFindings: true,
+    showConfidence: true,
+    showOverlays: true,
+    showPatientInfo: true,
+    showInsurance: false,
+    showSignature: true,
+    clinicName: '',
+    dentistName: '',
+    croNumber: '',
+    customNotes: ''
+  });
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('report_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      
+      setTemplates(data || []);
+      
+      // Select default template if available
+      const defaultTemplate = data?.find(t => t.is_default);
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate.id);
+        loadTemplateCustomizations(defaultTemplate);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    }
+  };
+
+  const loadTemplateCustomizations = (template: ReportTemplate) => {
+    const templateData = template.template_data;
+    setCustomizations({
+      showImages: templateData.exam_section?.show_images ?? true,
+      showFindings: templateData.exam_section?.show_findings ?? true,
+      showConfidence: templateData.exam_section?.show_confidence ?? true,
+      showOverlays: templateData.exam_section?.show_overlays ?? true,
+      showPatientInfo: templateData.patient_section?.show_patient_info ?? true,
+      showInsurance: templateData.patient_section?.show_insurance ?? false,
+      showSignature: templateData.footer?.show_signature ?? true,
+      clinicName: templateData.header?.clinic_name?.replace('{{clinic_name}}', '') || '',
+      dentistName: templateData.footer?.signature_text?.replace('Dr. {{dentist_name}}', '').replace('Dr. ', '') || '',
+      croNumber: templateData.footer?.cro_number?.replace('{{cro_number}}', '') || '',
+      customNotes: ''
+    });
+  };
 
   const generateReport = async () => {
+    if (!selectedTemplate) {
+      toast.error("Selecione um template antes de gerar o relatório");
+      return;
+    }
+
     setGenerating(true);
     
     try {
-      // Call the edge function to generate PDF report
-      const response = await fetch(
-        `https://blwnzwkkykaobmclsvxg.supabase.co/functions/v1/generate-dental-report/v1/exams/${exam.id}/report.pdf`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
+      const { data, error } = await supabase.functions.invoke('generate-dental-report', {
+        body: { 
+          examId: exam.id,
+          templateId: selectedTemplate,
+          customizations: customizations
         }
-      );
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-        throw new Error(errorData.error || 'Erro ao gerar relatório');
+      if (error) throw error;
+
+      if (data?.reportUrl) {
+        setReportUrl(data.reportUrl);
+        setLastGenerated(new Date().toISOString());
+        
+        toast.success("Relatório gerado com sucesso!");
+        
+        if (onReportGenerated) {
+          onReportGenerated(data.reportUrl);
+        }
       }
-
-      // Get the PDF blob
-      const pdfBlob = await response.blob();
-      
-      // Create download URL
-      const url = URL.createObjectURL(pdfBlob);
-      setReportUrl(url);
-      setLastGenerated(new Date().toISOString());
-      
-      // Trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `relatorio_dental_${exam.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      toast.success('Relatório PDF gerado com sucesso!');
-      
-      if (onReportGenerated) {
-        onReportGenerated(url);
-      }
-
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating report:', error);
-      toast.error(`Erro ao gerar relatório: ${error.message}`);
+      toast.error("Erro ao gerar relatório");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const downloadReport = () => {
+    if (reportUrl) {
+      window.open(reportUrl, '_blank');
     }
   };
 
@@ -85,199 +150,232 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
     }
   };
 
-  const shareReport = async () => {
-    if (reportUrl) {
-      try {
-        await navigator.share({
-          title: 'Relatório de Análise Dental',
-          text: 'Relatório de análise dental gerado por IA',
-          url: reportUrl
-        });
-      } catch (error) {
-        // Fallback to copy URL
-        await navigator.clipboard.writeText(reportUrl);
-        toast.success('Link do relatório copiado!');
-      }
-    }
-  };
-
-  const getFindings = () => {
-    if (!exam?.dental_images) return [];
-    
-    return exam.dental_images.flatMap((image: any) => image.findings || []);
-  };
-
-  const getSeverityCount = (severity: string) => {
-    return getFindings().filter((f: any) => f.severity === severity).length;
-  };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Relatório PDF Profissional
+          Gerador de Relatórios
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Report Status */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium">Status do Relatório:</span>
-            {lastGenerated ? (
-              <Badge variant="default" className="bg-green-100 text-green-800">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Disponível
-              </Badge>
-            ) : (
-              <Badge variant="secondary">
-                Não gerado
-              </Badge>
-            )}
+      <CardContent className="space-y-4">
+        {/* Template Selection */}
+        <div className="space-y-2">
+          <Label>Template do Relatório</Label>
+          <div className="flex gap-2">
+            <Select value={selectedTemplate} onValueChange={(value) => {
+              setSelectedTemplate(value);
+              const template = templates.find(t => t.id === value);
+              if (template) loadTemplateCustomizations(template);
+            }}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Selecione um template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map(template => (
+                  <SelectItem key={template.id} value={template.id}>
+                    <div className="flex items-center gap-2">
+                      {template.name}
+                      {template.is_default && <Badge variant="secondary" className="text-xs">Padrão</Badge>}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Personalizar Relatório</DialogTitle>
+                </DialogHeader>
+                
+                <Tabs defaultValue="content" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="content">Conteúdo</TabsTrigger>
+                    <TabsTrigger value="header">Cabeçalho</TabsTrigger>
+                    <TabsTrigger value="signature">Assinatura</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="content" className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showImages">Mostrar Imagens</Label>
+                        <Switch
+                          id="showImages"
+                          checked={customizations.showImages}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showImages: checked }))
+                          }
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showFindings">Mostrar Achados</Label>
+                        <Switch
+                          id="showFindings"
+                          checked={customizations.showFindings}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showFindings: checked }))
+                          }
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showConfidence">Mostrar Confiança</Label>
+                        <Switch
+                          id="showConfidence"
+                          checked={customizations.showConfidence}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showConfidence: checked }))
+                          }
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showOverlays">Mostrar Overlays</Label>
+                        <Switch
+                          id="showOverlays"
+                          checked={customizations.showOverlays}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showOverlays: checked }))
+                          }
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showPatientInfo">Info do Paciente</Label>
+                        <Switch
+                          id="showPatientInfo"
+                          checked={customizations.showPatientInfo}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showPatientInfo: checked }))
+                          }
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showInsurance">Mostrar Convênio</Label>
+                        <Switch
+                          id="showInsurance"
+                          checked={customizations.showInsurance}
+                          onCheckedChange={(checked) => 
+                            setCustomizations(prev => ({ ...prev, showInsurance: checked }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="customNotes">Observações Personalizadas</Label>
+                      <Textarea
+                        id="customNotes"
+                        value={customizations.customNotes}
+                        onChange={(e) => setCustomizations(prev => ({ ...prev, customNotes: e.target.value }))}
+                        placeholder="Adicione observações que aparecerão no relatório..."
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="header" className="space-y-4">
+                    <div>
+                      <Label htmlFor="clinicName">Nome da Clínica</Label>
+                      <Input
+                        id="clinicName"
+                        value={customizations.clinicName}
+                        onChange={(e) => setCustomizations(prev => ({ ...prev, clinicName: e.target.value }))}
+                        placeholder="Nome da sua clínica"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="signature" className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showSignature">Incluir Assinatura</Label>
+                      <Switch
+                        id="showSignature"
+                        checked={customizations.showSignature}
+                        onCheckedChange={(checked) => 
+                          setCustomizations(prev => ({ ...prev, showSignature: checked }))
+                        }
+                      />
+                    </div>
+                    
+                    {customizations.showSignature && (
+                      <>
+                        <div>
+                          <Label htmlFor="dentistName">Nome do Dentista</Label>
+                          <Input
+                            id="dentistName"
+                            value={customizations.dentistName}
+                            onChange={(e) => setCustomizations(prev => ({ ...prev, dentistName: e.target.value }))}
+                            placeholder="Dr(a). Seu Nome"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="croNumber">Número do CRO</Label>
+                          <Input
+                            id="croNumber"
+                            value={customizations.croNumber}
+                            onChange={(e) => setCustomizations(prev => ({ ...prev, croNumber: e.target.value }))}
+                            placeholder="CRO-SP 12345"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
           </div>
-          
-          {lastGenerated && (
-            <div className="text-sm text-muted-foreground">
-              Última geração: {format(new Date(lastGenerated), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </div>
-          )}
         </div>
 
-        <Separator />
-
-        {/* Report Preview Info */}
-        <div className="space-y-4">
-          <h4 className="font-medium">📋 Conteúdo do Relatório:</h4>
-          
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Logo e informações da clínica</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Imagens originais + overlays</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Análise detalhada por dente</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Explicações simplificadas</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Recomendações clínicas</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Resumo estatístico</span>
-              </div>
-            </div>
+        {lastGenerated && (
+          <div className="text-sm text-muted-foreground">
+            Último relatório: {new Date(lastGenerated).toLocaleString('pt-BR')}
           </div>
-        </div>
-
-        <Separator />
-
-        {/* Findings Summary */}
-        <div className="space-y-4">
-          <h4 className="font-medium">🔍 Resumo dos Achados:</h4>
-          
-          {getFindings().length === 0 ? (
-            <div className="text-center py-4 text-green-600">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-              <p className="font-medium">Nenhum achado significativo</p>
-              <p className="text-sm text-muted-foreground">Estruturas dentárias em bom estado</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-yellow-50 rounded-lg border">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {getSeverityCount('leve')}
-                </div>
-                <div className="text-sm text-yellow-700">Leves</div>
-              </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg border">
-                <div className="text-2xl font-bold text-orange-600">
-                  {getSeverityCount('moderada')}
-                </div>
-                <div className="text-sm text-orange-700">Moderadas</div>
-              </div>
-              <div className="text-center p-3 bg-red-50 rounded-lg border">
-                <div className="text-2xl font-bold text-red-600">
-                  {getSeverityCount('severa')}
-                </div>
-                <div className="text-sm text-red-700">Severas</div>
-              </div>
-            </div>
-          )}
-          
-          <div className="text-xs text-muted-foreground">
-            Total de imagens analisadas: {exam?.dental_images?.length || 0}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button
-            onClick={generateReport}
-            disabled={generating}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            size="lg"
+        )}
+        
+        <div className="flex gap-2">
+          <Button 
+            onClick={generateReport} 
+            disabled={generating || !selectedTemplate}
+            className="flex-1"
           >
             {generating ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Gerando Relatório...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
               </>
             ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
-                {lastGenerated ? 'Regenerar Relatório PDF' : 'Gerar Relatório PDF'}
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {reportUrl ? 'Regenerar' : 'Gerar'} Relatório
               </>
             )}
           </Button>
-
+          
           {reportUrl && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
+            <>
+              <Button 
+                variant="outline" 
                 onClick={previewReport}
-                className="flex-1"
               >
-                <Eye className="h-4 w-4 mr-2" />
-                Visualizar
+                <Eye className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                onClick={shareReport}
-                className="flex-1"
+              <Button 
+                variant="outline" 
+                onClick={downloadReport}
               >
-                <Share className="h-4 w-4 mr-2" />
-                Compartilhar
+                <Download className="h-4 w-4" />
               </Button>
-            </div>
+            </>
           )}
-        </div>
-
-        {/* Info Note */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium mb-1">Relatório Profissional</p>
-              <p>
-                O relatório PDF contém análise detalhada com explicações simplificadas 
-                para o paciente e recomendações clínicas baseadas na inteligência artificial.
-              </p>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>

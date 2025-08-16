@@ -185,16 +185,31 @@ export function PatientHistory({ patient, onClose }: PatientHistoryProps) {
     setSaving(true);
 
     try {
+      // Get user's tenant_id first
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError || !profile?.tenant_id) {
+        toast.error("Erro ao obter informações do usuário");
+        return;
+      }
+
       const historyData = {
         patient_id: patient.id,
+        tenant_id: profile.tenant_id,
         ...formData,
         next_appointment: formData.next_appointment || null
       };
 
       if (selectedEntry) {
+        // For updates, remove tenant_id as it shouldn't change
+        const { tenant_id, ...updateData } = historyData;
         const { error } = await supabase
           .from('patient_history')
-          .update(historyData)
+          .update(updateData)
           .eq('id', selectedEntry.id);
 
         if (error) throw error;

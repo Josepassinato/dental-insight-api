@@ -139,8 +139,21 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
         return;
       }
 
+      // Get user's tenant_id first
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError || !profile?.tenant_id) {
+        toast.error("Erro ao obter informações do usuário");
+        return;
+      }
+
       const patientData = {
         ...formData,
+        tenant_id: profile.tenant_id,
         // Convert empty strings to null for optional fields
         cpf: formData.cpf || null,
         phone: formData.phone || null,
@@ -161,15 +174,16 @@ export function PatientForm({ patient, onSaved, onCancel }: PatientFormProps) {
       };
 
       if (patient?.id) {
-        // Update existing patient
+        // Update existing patient (remove tenant_id from update as it shouldn't change)
+        const { tenant_id, ...updateData } = patientData;
         const { error } = await supabase
           .from('patients')
-          .update(patientData)
+          .update(updateData)
           .eq('id', patient.id);
 
         if (error) throw error;
       } else {
-        // Create new patient - tenant_id will be handled by RLS
+        // Create new patient
         const { error } = await supabase
           .from('patients')
           .insert(patientData);
