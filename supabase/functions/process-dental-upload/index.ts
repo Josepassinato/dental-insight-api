@@ -51,8 +51,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const formData = await req.formData();
     
-    const rawFiles = formData.getAll('files');
-    const files = (rawFiles.filter((f) => f instanceof File) as File[]);
+    const files = formData.getAll('files') as File[];
     const patientId = formData.get('patientId') as string;
     const originalExamType = (formData.get('examType') as string) || '';
     const examType = mapExamType(originalExamType);
