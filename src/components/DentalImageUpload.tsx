@@ -30,7 +30,7 @@ interface Patient {
 export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [patientId, setPatientId] = useState('');
-  const [examType, setExamType] = useState('radiografia');
+  const [examType, setExamType] = useState('panoramic');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -269,9 +269,11 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="radiografia">Radiografia</SelectItem>
-                <SelectItem value="fotografia">Fotografia</SelectItem>
-                <SelectItem value="scan">Scan 3D</SelectItem>
+                <SelectItem value="panoramic">Radiografia Panorâmica</SelectItem>
+                <SelectItem value="periapical">Periapical</SelectItem>
+                <SelectItem value="bitewing">Bitewing (Interproximal)</SelectItem>
+                <SelectItem value="cephalometric">Cefalométrica</SelectItem>
+                <SelectItem value="cbct">CBCT / Tomografia</SelectItem>
               </SelectContent>
             </Select>
           </div>

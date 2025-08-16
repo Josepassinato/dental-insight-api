@@ -10,6 +10,38 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Normalize possible frontend exam types (pt-BR) to DB enum values
+function mapExamType(input: string): 'panoramic' | 'periapical' | 'bitewing' | 'cephalometric' | 'cbct' {
+  const v = (input || '').toLowerCase().trim();
+  switch (v) {
+    case 'panoramica':
+    case 'panorâmica':
+    case 'radiografia':
+    case 'panoramic':
+      return 'panoramic';
+    case 'periapical':
+      return 'periapical';
+    case 'bitewing':
+    case 'mordida':
+      return 'bitewing';
+    case 'cefalometrica':
+    case 'cefalométrica':
+    case 'cephalometric':
+      return 'cephalometric';
+    case 'scan':
+    case 'cbct':
+    case 'tomografia':
+    case 'tomografia computadorizada':
+      return 'cbct';
+    case 'fotografia':
+    case 'photo':
+      // Fallback reasonable mapping for photos
+      return 'periapical';
+    default:
+      return 'panoramic';
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,7 +53,9 @@ serve(async (req) => {
     
     const files = formData.getAll('files') as File[];
     const patientId = formData.get('patientId') as string;
-    const examType = formData.get('examType') as string || 'radiografia';
+    const originalExamType = (formData.get('examType') as string) || '';
+    const examType = mapExamType(originalExamType);
+    console.log('Exam type mapping:', originalExamType, '->', examType);
     const tenantId = formData.get('tenantId') as string;
 
     if (!files || files.length === 0) {
