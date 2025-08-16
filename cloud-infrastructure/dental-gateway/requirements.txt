@@ -1,0 +1,8 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+google-cloud-storage==2.10.0
+google-cloud-pubsub==2.18.4
+google-cloud-sql-connector[asyncpg]==1.4.3
+asyncpg==0.29.0
+python-multipart==0.0.6
+aiofiles==23.2.1

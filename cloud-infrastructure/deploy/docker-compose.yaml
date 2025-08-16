@@ -1,0 +1,72 @@
+# Docker Compose for local development and testing
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: dental_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dental_password_123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Dental Gateway API
+  dental-gateway:
+    build: ../dental-gateway
+    environment:
+      GCP_PROJECT: dental-analysis-project
+      BUCKET_UPLOADS: dental-uploads-dev
+      BUCKET_OVERLAYS: dental-overlays-dev
+      BUCKET_REPORTS: dental-reports-dev
+      TOPIC_INFER: dental-infer-dev
+      DB_CONNECTION_NAME: ""  # Empty for local DB
+      DB_USER: postgres
+      DB_PASSWORD: dental_password_123
+      DB_NAME: dental_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../dental-gateway:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+
+  # Inference Worker (for local testing)
+  inference-worker:
+    build: ../inference-worker
+    environment:
+      GCP_PROJECT: dental-analysis-project
+      GCP_REGION: us-central1
+      BUCKET_UPLOADS: dental-uploads-dev
+      BUCKET_OVERLAYS: dental-overlays-dev
+      BUCKET_REPORTS: dental-reports-dev
+      VERTEX_ENDPOINT_ID: ""  # Empty to use mock analysis
+      DB_CONNECTION_NAME: ""  # Empty for local DB
+      DB_USER: postgres
+      DB_PASSWORD: dental_password_123
+      DB_NAME: dental_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SUBSCRIPTION_NAME: dental-infer-sub-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../inference-worker:/app
+
+volumes:
+  postgres_data:
