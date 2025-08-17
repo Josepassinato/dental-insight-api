@@ -133,7 +133,7 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
       // Prepare form data
       const formData = new FormData();
       files.forEach((file, i) => {
-        formData.append('files', file, file.name || `image-${i + 1}.jpg`);
+        formData.append(`file_${i}`, file, file.name || `image-${i + 1}.jpg`);
       });
       formData.append('patientId', patientId);
       formData.append('examType', examType);
@@ -153,15 +153,14 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
         }
       );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro no upload');
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Erro no upload');
       }
 
-      const result = await response.json();
-      
       setUploadProgress(100);
-      toast.success(`Upload concluído! ${result.uploadedImages} imagens processadas.`);
+      toast.success(result.message || `Upload concluído! ${result.processed_images || files.length} imagens processadas.`);
       
       // Clear form
       setFiles([]);
@@ -169,8 +168,8 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
       setUploadProgress(0);
       
       // Notify parent component
-      if (onUploadComplete && result.examId) {
-        onUploadComplete(result.examId);
+      if (onUploadComplete && (result.exam_id || result.examId)) {
+        onUploadComplete(result.exam_id || result.examId);
       }
 
     } catch (error) {
