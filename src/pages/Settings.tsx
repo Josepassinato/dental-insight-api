@@ -95,7 +95,10 @@ const Settings = () => {
         
         if (!session) {
           console.log("Settings: Sem sessão, redirecionando para auth");
-          navigate("/auth");
+          // Adiciona um pequeño delay para permitir que o usuário veja a página antes do redirect
+          setTimeout(() => {
+            navigate("/auth");
+          }, 100);
           return;
         }
 
