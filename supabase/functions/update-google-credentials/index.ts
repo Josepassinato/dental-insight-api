@@ -81,36 +81,16 @@ serve(async (req) => {
     // Test connection
     if (action === 'test') {
       try {
-        // Initialize Supabase admin client to get credentials from vault
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        
-        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        // Read secrets from environment (Supabase Functions Secrets)
+        const currentCredentials = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
+        const projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID');
 
-        // Get both credentials and project ID from vault
-        const [credentialsResult, projectIdResult] = await Promise.all([
-          supabaseAdmin
-            .from('vault.secrets')
-            .select('secret')
-            .eq('name', 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')
-            .single(),
-          supabaseAdmin
-            .from('vault.secrets')
-            .select('secret')
-            .eq('name', 'GOOGLE_CLOUD_PROJECT_ID')
-            .single()
-        ]);
-
-        if (credentialsResult.error || !credentialsResult.data?.secret) {
-          throw new Error('Google Cloud credentials not configured');
+        if (!currentCredentials) {
+          throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY ausente');
         }
-
-        if (projectIdResult.error || !projectIdResult.data?.secret) {
-          throw new Error('Google Cloud Project ID not configured');
+        if (!projectId) {
+          throw new Error('GOOGLE_CLOUD_PROJECT_ID ausente');
         }
-
-        const currentCredentials = credentialsResult.data.secret;
-        const projectId = projectIdResult.data.secret;
 
         const parsed = JSON.parse(currentCredentials);
         
