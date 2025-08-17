@@ -92,6 +92,255 @@ async function generateAccessToken(): Promise<string> {
   } catch (error) {
     console.error('Error generating access token:', error);
     throw error;
+}
+
+// Função auxiliar para processar com OpenAI quando Google Cloud não está disponível
+async function processWithOpenAI(examId: string, supabase: any) {
+  try {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openaiApiKey) {
+      throw new Error('Neither Google Cloud nor OpenAI credentials are configured');
+    }
+
+    console.log('Starting OpenAI analysis for exam:', examId);
+
+    // Get exam and images
+    const { data: exam, error: examError } = await supabase
+      .from('exams')
+      .select('*, dental_images(*)')
+      .eq('id', examId)
+      .single();
+
+    if (examError || !exam) {
+      throw new Error('Exam not found');
+    }
+
+    // Update exam status to processing
+    await supabase
+      .from('exams')
+      .update({ 
+        status: 'processing',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', examId);
+
+    // Process each image with OpenAI
+    for (const image of exam.dental_images) {
+      console.log('Analyzing image with OpenAI:', image.id);
+
+      // Update image status to processing
+      await supabase
+        .from('dental_images')
+        .update({ processing_status: 'processing' })
+        .eq('id', image.id);
+
+      try {
+        // Get the image from storage
+        const { data: imageData } = await supabase.storage
+          .from('dental-uploads')
+          .download(image.file_path);
+
+        if (!imageData) {
+          throw new Error('Failed to download image');
+        }
+
+        // Convert to base64
+        const arrayBuffer = await imageData.arrayBuffer();
+        const base64 = b64encode(new Uint8Array(arrayBuffer));
+        
+        let mime = image?.mime_type || 'image/jpeg';
+        if (!mime.startsWith('image/')) {
+          mime = 'image/jpeg';
+        }
+
+        const dataUrl = `data:${mime};base64,${base64}`;
+
+        // Simplificado prompt para OpenAI
+        const analysisPrompt = `
+          Analise esta radiografia dental e identifique possíveis problemas dentários.
+          
+          Procure por:
+          - Cáries (áreas escuras nos dentes)
+          - Problemas periodontais (perda óssea)
+          - Lesões periapicais (áreas escuras na raiz)
+          - Fraturas
+          - Problemas ortodônticos
+          - Implantes e seu estado
+          
+          Responda APENAS em formato JSON válido:
+          {
+            "findings": [
+              {
+                "tooth_number": "16",
+                "finding_type": "carie_oclusal",
+                "clinical_severity": "leve",
+                "confidence": 0.87,
+                "bbox": {"x": 245, "y": 156, "width": 32, "height": 28},
+                "precise_location": "face oclusal",
+                "description": "Cárie inicial em esmalte, dente 16 (primeiro molar superior direito)",
+                "clinical_recommendations": ["Restauração preventiva", "Controle em 3 meses"],
+                "urgency": "baixa",
+                "prognosis": "excelente",
+                "treatment_complexity": "simples",
+                "evidence_strength": "clara"
+              }
+            ],
+            "overall_analysis": {
+              "total_findings": 1,
+              "risk_level": "baixo",
+              "summary": "Cárie inicial detectada em dente 16"
+            }
+          }
+        `;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: analysisPrompt
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: dataUrl,
+                      detail: 'high'
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 4000,
+            temperature: 0.1
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const aiResponse = await response.json();
+        const content = aiResponse.choices[0]?.message?.content;
+
+        if (!content) {
+          throw new Error('Empty response from OpenAI');
+        }
+
+        // Parse AI response
+        let analysisResult;
+        try {
+          // Clean the response to extract JSON
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            throw new Error('No valid JSON found in AI response');
+          }
+          analysisResult = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', content);
+          throw new Error('Invalid JSON response from AI');
+        }
+
+        const findings = analysisResult.findings || [];
+        const overallConfidence = findings.length > 0 
+          ? findings.reduce((sum: number, f: any) => sum + (f.confidence || 0), 0) / findings.length 
+          : 0.5;
+
+        // Update image with analysis results
+        await supabase
+          .from('dental_images')
+          .update({
+            processing_status: 'completed',
+            findings: findings,
+            analysis_confidence: overallConfidence,
+            ai_analysis: {
+              provider: 'openai',
+              model: 'gpt-4o',
+              timestamp: new Date().toISOString(),
+              raw_response: analysisResult
+            }
+          })
+          .eq('id', image.id);
+
+        console.log(`Successfully analyzed image ${image.id} with ${findings.length} findings`);
+
+      } catch (error) {
+        console.error(`Error processing image ${image.id}:`, error);
+        
+        await supabase
+          .from('dental_images')
+          .update({
+            processing_status: 'failed',
+            ai_analysis: {
+              error: error.message,
+              timestamp: new Date().toISOString(),
+              provider: 'openai'
+            }
+          })
+          .eq('id', image.id);
+      }
+    }
+
+    // Update exam status to completed
+    await supabase
+      .from('exams')
+      .update({ 
+        status: 'completed',
+        processed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', examId);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Analysis completed successfully',
+        provider: 'openai'
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in OpenAI processing:', error);
+
+    // Mark exam as failed
+    try {
+      await supabase
+        .from('exams')
+        .update({ 
+          status: 'failed', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', examId);
+        
+      await supabase
+        .from('dental_images')
+        .update({ 
+          processing_status: 'failed',
+          ai_analysis: {
+            error: error.message,
+            timestamp: new Date().toISOString(),
+            provider: 'openai'
+          }
+        })
+        .eq('exam_id', examId);
+    } catch (markError) {
+      console.error('Failed to mark exam as failed:', markError);
+    }
+
+    throw error;
   }
 }
 
@@ -118,26 +367,16 @@ serve(async (req) => {
     const examId = body?.examId as string | undefined;
     examIdGlobal = examId || null;
 
-    if (!gcpProjectId) {
-      console.error('Missing Google Cloud Project ID. Please set GOOGLE_CLOUD_PROJECT_ID in Supabase Edge Function secrets.');
-      if (examId) {
-        try {
-          await supabase
-            .from('exams')
-            .update({ status: 'failed', updated_at: new Date().toISOString() })
-            .eq('id', examId);
-          await supabase
-            .from('dental_images')
-            .update({ processing_status: 'failed', ai_analysis: { error: 'Missing GOOGLE_CLOUD_PROJECT_ID' } })
-            .eq('exam_id', examId);
-        } catch (markErr) {
-          console.error('Failed to mark exam/images as failed due to missing key:', markErr);
-        }
+    // Verificar se as credenciais Google Cloud estão disponíveis
+    if (!gcpProjectId || !serviceAccountKey) {
+      console.log('Google Cloud credentials not found, using OpenAI fallback for exam:', examId);
+      
+      if (!examId) {
+        throw new Error('Missing examId');
       }
-      return new Response(
-        JSON.stringify({ error: 'GOOGLE_CLOUD_PROJECT_ID not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+
+      // Usar OpenAI como fallback
+      return await processWithOpenAI(examId, supabase);
     }
 
     if (!examId) {
