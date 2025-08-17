@@ -31,19 +31,46 @@ interface ExamResultProps {
 export function ExamResult({ result }: ExamResultProps) {
   const getFindingTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
+      // MODALIDADE CÁRIES
+      'caries': 'Cárie',
+      'cavity': 'Cavidade',
       'carie': 'Cárie',
       'carie_oclusal': 'Cárie Oclusal',
       'carie_proximal': 'Cárie Proximal',
+      'carie_oclusal_profunda': 'Cárie Oclusal Profunda',
+      'carie_cervical': 'Cárie Cervical',
+      'carie_recorrente': 'Cárie Recorrente',
+      
+      // MODALIDADE PERIODONTAL
+      'periodontal': 'Doença Periodontal',
+      'bone_loss': 'Perda Óssea',
       'perda_ossea': 'Perda Óssea',
-      'restauracao_defeituosa': 'Restauração Defeituosa',
+      'gingivitis': 'Gengivite',
+      'calculus': 'Cálculo',
       'calculo': 'Cálculo',
       'gengivite': 'Gengivite',
       'periodontite': 'Periodontite',
+      'perda_ossea_horizontal': 'Perda Óssea Horizontal',
+      'perda_ossea_vertical': 'Perda Óssea Vertical',
+      'envolvimento_furca': 'Envolvimento de Furca',
+      
+      // MODALIDADE PERIAPICAL
+      'periapical': 'Lesão Periapical',
+      'periapical_lesion': 'Lesão Periapical',
+      'root_canal_issue': 'Problema Endodôntico',
+      'lesao_periapical': 'Lesão Periapical',
+      'granuloma_periapical': 'Granuloma Periapical',
+      'cisto_radicular': 'Cisto Radicular',
+      'abscesso_agudo': 'Abscesso Agudo',
+      'reabsorcao_radicular': 'Reabsorção Radicular',
+      'necrose_pulpar': 'Necrose Pulpar',
+      
+      // OUTROS
+      'restauracao_defeituosa': 'Restauração Defeituosa',
       'impactacao': 'Impactação',
-      'fratura': 'Fratura',
-      'lesao_periapical': 'Lesão Periapical'
+      'fratura': 'Fratura'
     };
-    return labels[type] || type;
+    return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getSeverityColor = (severity: string) => {

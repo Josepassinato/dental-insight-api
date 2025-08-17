@@ -201,12 +201,13 @@ serve(async (req) => {
 
         const dataUrl = `data:${mime};base64,${base64}`;
 
-        // Ultra-High Precision Dental AI Analysis - Medical Grade
+        // FASE 1: Análise Tri-Modal Avançada - Cáries + Periodontal + Periapical
         const analysisPrompt = `
-          ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA AVANÇADA
-          Análise com precisão de nível Google Medical AI - máxima acurácia diagnóstica
+          ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA MULTI-MODAL
+          Análise integrada com precisão Google Medical AI para 3 especialidades:
+          🦷 CÁRIES | 🦴 PERIODONTAL | 🔴 LESÕES PERIAPICAIS
 
-          PROTOCOLO DE ANÁLISE ULTRA-PRECISA:
+          PROTOCOLO TRI-MODAL ULTRA-PRECISO:
           
           1. ANÁLISE MULTI-ETAPAS OBRIGATÓRIA:
              ETAPA 1 - QUALIDADE DA IMAGEM:
@@ -222,7 +223,7 @@ serve(async (req) => {
              • Confirme se é radiografia periapical, bite-wing, panorâmica ou foto intraoral
              • Verifique sobreposições que limitam diagnóstico
              
-             ETAPA 3 - DETECÇÃO DIFERENCIAL:
+             ETAPA 3 - DETECÇÃO DIFERENCIAL TRI-MODAL:
              • Compare com variações anatômicas normais
              • Diferencie patologias de artefatos de imagem
              • Confirme achados com múltiplas evidências radiográficas
@@ -235,27 +236,43 @@ serve(async (req) => {
              • Use "suspeita de" para achados borderline (confidence 0.6-0.74)
              • Rejeite false positives comuns: sobreposições, burn-out, anatomia normal
           
-          3. DIAGNÓSTICOS ESPECÍFICOS VALIDADOS:
+          3. MODALIDADE 1 - ANÁLISE DE CÁRIES:
              CÁRIES - Critérios rigorosos:
              • Inicial: descontinuidade do esmalte, radiolucência localizada
              • Dentina: radiolucência estendida, forma cônica característica  
              • Pulpar: comunicação visível com câmara pulpar
              • Secundária: radiolucência marginal em restaurações
+             • Cervical: lesões na junção esmalte-cemento
+             • Recorrente: ao redor de restaurações existentes
              
-             PERIODONTAL - Evidências claras:
-             • Perda óssea: medição em mm, horizontal vs vertical
-             • Alargamento do espaço periodontal
-             • Lâmina dura interrompida
+          4. MODALIDADE 2 - ANÁLISE PERIODONTAL:
+             DOENÇA PERIODONTAL - Evidências claras:
+             • Perda óssea horizontal: redução uniforme da crista alveolar
+             • Perda óssea vertical: defeitos angulares >30°
+             • Alargamento do espaço periodontal uniforme ou localizado
+             • Lâmina dura interrompida ou ausente
+             • Cálculo supra/subgengival radioopaco
+             • Reabsorção óssea inter-radicular em molares
+             • Migração dental patológica
+             • Envolvimento de furca (classes I, II, III)
              
-             ENDODONTIA - Sinais patognomônicos:
-             • Radiolucência periapical >2mm
-             • Perda da lâmina dura apical
-             • Reabsorção radicular externa/interna
+          5. MODALIDADE 3 - LESÕES PERIAPICAIS:
+             PATOLOGIA PERIAPICAL - Sinais patognomônicos:
+             • Granuloma periapical: radiolucência bem definida >2mm
+             • Cisto radicular: radiolucência circular com halo esclerótico
+             • Abscesso agudo: radiolucência difusa sem delimitação
+             • Osteomielite: áreas mistas radio-lúcidas/opacas
+             • Reabsorção radicular externa progressiva
+             • Reabsorção radicular interna (ballooning)
+             • Necrose pulpar: escurecimento da câmara pulpar
+             • Obliteração do canal radicular
              
-             RESTAURAÇÕES - Avaliação técnica:
+          6. RESTAURAÇÕES E TRATAMENTOS - Avaliação técnica:
              • Adaptação marginal inadequada
              • Excesso/déficit de material
              • Recidiva de cárie (radiolucência marginal)
+             • Qualidade de tratamentos endodônticos
+             • Presença de núcleos, pinos, coroas
           
           4. SISTEMA FDI RIGOROSO:
              • Adultos: 11-18, 21-28, 31-38, 41-48
@@ -267,15 +284,28 @@ serve(async (req) => {
              • Margem de 2-3 pixels para visualização
              • Múltiplos pontos para lesões extensas
           
-          6. CORES DIAGNÓSTICAS VALIDADAS:
-             • Cárie inicial: #FF6B6B (vermelho claro)
-             • Cárie extensa: #FF0000 (vermelho intenso)
-             • Periodontal: #FF8C00 (laranja)
-             • Endodontia: #8A2BE2 (roxo)
-             • Restauração: #1E90FF (azul)
-             • Cálculo: #32CD32 (verde)
-             • Patologia: #FF1493 (rosa)
-             • Suspeita: #FFD700 (amarelo)
+           7. CORES DIAGNÓSTICAS TRI-MODAIS:
+              🦷 MODALIDADE CÁRIES:
+              • Cárie inicial: #FF6B6B (vermelho claro)
+              • Cárie extensa: #FF0000 (vermelho intenso)
+              • Cárie recorrente: #DC143C (crimson)
+              
+              🦴 MODALIDADE PERIODONTAL:
+              • Perda óssea horizontal: #FF8C00 (laranja)
+              • Perda óssea vertical: #FF4500 (laranja escuro)
+              • Cálculo: #32CD32 (verde)
+              • Envolvimento furca: #FFA500 (laranja)
+              
+              🔴 MODALIDADE PERIAPICAL:
+              • Granuloma: #8A2BE2 (roxo)
+              • Cisto: #9932CC (roxo escuro)
+              • Abscesso: #FF1493 (rosa intenso)
+              • Reabsorção: #B22222 (vermelho tijolo)
+              
+              📋 GERAL:
+              • Restauração: #1E90FF (azul)
+              • Suspeita: #FFD700 (amarelo)
+              • Normal: #228B22 (verde floresta)
           
           RESPOSTA EM JSON MÉDICO ULTRA-ESTRUTURADO:
           {

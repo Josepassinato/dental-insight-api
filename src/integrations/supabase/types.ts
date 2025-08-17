@@ -196,6 +196,7 @@ export type Database = {
         Row: {
           ai_analysis: Json | null
           analysis_confidence: number | null
+          analysis_types: string[] | null
           created_at: string
           exam_id: string
           file_path: string
@@ -214,6 +215,7 @@ export type Database = {
         Insert: {
           ai_analysis?: Json | null
           analysis_confidence?: number | null
+          analysis_types?: string[] | null
           created_at?: string
           exam_id: string
           file_path: string
@@ -232,6 +234,7 @@ export type Database = {
         Update: {
           ai_analysis?: Json | null
           analysis_confidence?: number | null
+          analysis_types?: string[] | null
           created_at?: string
           exam_id?: string
           file_path?: string

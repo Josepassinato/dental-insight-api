@@ -7,6 +7,7 @@ import { ArrowLeft, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExamResult } from '@/components/ExamResult';
 import { DentalImageViewer } from '@/components/DentalImageViewer';
+import { AnalysisModalities } from '@/components/AnalysisModalities';
 
 interface ExamDetail {
   id: string;
@@ -244,6 +245,11 @@ export default function ExamDetailPage() {
             Baixar Relatório
           </Button>
         </div>
+      </div>
+
+      {/* Analysis Modalities - FASE 1 */}
+      <div className="mb-6">
+        <AnalysisModalities findings={exam.findings || []} />
       </div>
 
       {/* Exam Result Component */}
