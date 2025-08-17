@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { GoogleCredentialsTest } from "@/components/GoogleCredentialsTest";
+
 import { 
   Brain, 
   Zap, 
@@ -137,10 +137,6 @@ const Index = () => {
               </Button>
             </div>
             
-            {/* Google Cloud Test */}
-            <div className="flex justify-center mb-8">
-              <GoogleCredentialsTest />
-            </div>
             
             {/* Social Proof */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-white/80">

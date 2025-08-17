@@ -15,46 +15,32 @@ const gcpLocation = 'us-central1'; // Região padrão para Vertex AI
 
 // Function to generate JWT token for Vertex AI authentication
 async function generateAccessToken(): Promise<string> {
-  console.log('🔑 [AUTH-1] Iniciando geração de token de acesso...');
-  
   if (!serviceAccountKey) {
-    console.error('❌ [AUTH-ERROR] GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY não encontrada');
     throw new Error('Missing GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
   }
 
   try {
-    console.log('🔑 [AUTH-2] Processando service account key...');
-    
     // Handle both base64 encoded and direct JSON formats
     let serviceAccountJson = serviceAccountKey;
     
     // Check if it's base64 encoded
     try {
       if (!serviceAccountKey.startsWith('{')) {
-        console.log('🔑 [AUTH-3] Decodificando base64...');
         serviceAccountJson = atob(serviceAccountKey);
-      } else {
-        console.log('🔑 [AUTH-3] Usando JSON direto...');
       }
     } catch (e) {
-      console.log('🔑 [AUTH-3] Falha no base64, usando como JSON string...');
       // If atob fails, assume it's already a JSON string
     }
     
-    console.log('🔑 [AUTH-4] Parseando service account JSON...');
     const serviceAccount = JSON.parse(serviceAccountJson);
     
     // Validar campos obrigatórios
     const requiredFields = ['client_email', 'private_key', 'project_id'];
     for (const field of requiredFields) {
       if (!serviceAccount[field]) {
-        console.error(`❌ [AUTH-ERROR] Campo obrigatório ausente: ${field}`);
         throw new Error(`Missing required field: ${field}`);
       }
     }
-    
-    console.log('🔑 [AUTH-5] Service account válido. Email:', serviceAccount.client_email);
-    console.log('🔑 [AUTH-6] Project ID:', serviceAccount.project_id);
     
     const now = Math.floor(Date.now() / 1000);
     const payload = {
@@ -65,8 +51,6 @@ async function generateAccessToken(): Promise<string> {
       iat: now,
     };
 
-    console.log('🔑 [AUTH-7] Criando JWT header e payload...');
-    
     // Create JWT header
     const header = {
       alg: 'RS256',
@@ -77,8 +61,6 @@ async function generateAccessToken(): Promise<string> {
     const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
-    console.log('🔑 [AUTH-8] Importando private key...');
-    
     // Import private key
     const privateKey = await crypto.subtle.importKey(
       'pkcs8',
@@ -91,16 +73,12 @@ async function generateAccessToken(): Promise<string> {
       ['sign']
     );
 
-    console.log('🔑 [AUTH-9] Assinando JWT...');
-    
     // Sign the JWT
     const signatureData = new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`);
     const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, signatureData);
     const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
     const jwt = `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
-    
-    console.log('🔑 [AUTH-10] Trocando JWT por access token...');
 
     // Exchange JWT for access token
     const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -116,16 +94,12 @@ async function generateAccessToken(): Promise<string> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [AUTH-ERROR] Token exchange failed: ${response.status} ${response.statusText}`, errorText);
       throw new Error(`Token exchange failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const tokenData = await response.json();
-    console.log('✅ [AUTH-SUCCESS] Access token gerado com sucesso!');
-    
     return tokenData.access_token;
   } catch (error) {
-    console.error('❌ [AUTH-FATAL] Erro na geração do access token:', error);
     throw error;
   }
 }
@@ -494,13 +468,7 @@ serve(async (req) => {
     examIdGlobal = examId || null;
 
     // Verificar se as credenciais Google Cloud estão disponíveis
-    console.log('🔍 [INIT-1] Verificando configuração Google Cloud...');
-    console.log('🔍 [INIT-2] Project ID:', gcpProjectId ? '✅ Configurado' : '❌ Ausente');
-    console.log('🔍 [INIT-3] Service Account Key:', serviceAccountKey ? '✅ Configurado' : '❌ Ausente');
-    
     if (!gcpProjectId || !serviceAccountKey) {
-      console.log('⚠️ [FALLBACK] Google Cloud não configurado, usando OpenAI...');
-      
       if (!examId) {
         throw new Error('Missing examId');
       }
@@ -508,8 +476,6 @@ serve(async (req) => {
       // Usar OpenAI como fallback
       return await processWithOpenAI(examId, supabase);
     }
-
-    console.log('✅ [INIT-SUCCESS] Google Cloud configurado! Prosseguindo com Vertex AI...');
 
     if (!examId) {
       throw new Error('Missing examId');
