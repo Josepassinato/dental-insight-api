@@ -183,13 +183,14 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <CardHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <FileImage className="h-5 w-5" />
-              Upload de Imagens Dentais
+              <span className="hidden sm:inline">Upload de Imagens Dentais</span>
+              <span className="sm:hidden">Upload Dental</span>
             </CardTitle>
             {onClose && (
               <Button variant="ghost" size="sm" onClick={onClose}>
@@ -198,9 +199,9 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
             )}
           </div>
         </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Patient and Exam Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2 relative">
             <Label htmlFor="patientSearch">Selecionar Paciente</Label>
             <div className="relative">
@@ -257,7 +258,7 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
               <p className="text-sm text-muted-foreground mt-1">Selecione o tipo de exame para análise de IA especializada</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {[
                 {
                   value: "panoramic",
@@ -292,23 +293,23 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
               ].map((option) => (
                 <div
                   key={option.value}
-                  className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                  className={`relative cursor-pointer rounded-lg border-2 p-3 sm:p-4 transition-all duration-200 hover:shadow-md ${
                     examType === option.value
                       ? 'border-primary bg-primary/5 shadow-md'
                       : 'border-border hover:border-primary/50'
                   } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
                   onClick={() => !uploading && setExamType(option.value)}
                 >
-                  <div className="flex items-start space-x-3">
-                    <div className="text-2xl">{option.icon}</div>
-                    <div className="flex-1 min-w-0">
+                  <div className="flex items-start space-x-2 sm:space-x-3">
+                    <div className="text-xl sm:text-2xl flex-shrink-0">{option.icon}</div>
+                    <div className="flex-1 min-w-0 pr-8">
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-medium text-foreground">{option.title}</h3>
+                        <h3 className="font-medium text-foreground text-sm sm:text-base">{option.title}</h3>
                         {examType === option.value && (
-                          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                          <div className="h-2 w-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">{option.description}</p>
                     </div>
                   </div>
                   
@@ -318,7 +319,7 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
                     value={option.value}
                     checked={examType === option.value}
                     onChange={() => setExamType(option.value)}
-                    className="absolute top-4 right-4 h-4 w-4 text-primary focus:ring-primary"
+                    className="absolute top-3 sm:top-4 right-3 sm:right-4 h-4 w-4 text-primary focus:ring-primary"
                     disabled={uploading}
                   />
                 </div>
@@ -330,22 +331,23 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
         {/* File Drop Zone */}
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
             isDragActive 
               ? 'border-primary bg-primary/5' 
               : 'border-muted-foreground/25 hover:border-primary/50'
           } ${uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
         >
           <input {...getInputProps()} />
-          <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <Upload className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-muted-foreground" />
           {isDragActive ? (
-            <p>Solte as imagens aqui...</p>
+            <p className="text-sm sm:text-base">Solte as imagens aqui...</p>
           ) : (
             <div>
-              <p className="text-lg font-medium mb-2">
-                Arraste e solte imagens ou clique para selecionar
+              <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2">
+                <span className="hidden sm:inline">Arraste e solte imagens ou clique para selecionar</span>
+                <span className="sm:hidden">Toque para selecionar imagens</span>
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Suporte: JPG, PNG, WEBP
               </p>
             </div>
@@ -354,9 +356,9 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
 
         {/* File Preview */}
         {files.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-medium">Imagens Selecionadas ({files.length})</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="font-medium text-sm sm:text-base">Imagens Selecionadas ({files.length})</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden bg-muted">
@@ -368,18 +370,18 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <FileImage className="h-8 w-8 text-muted-foreground" />
+                        <FileImage className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-destructive text-destructive-foreground opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center touch-manipulation"
                     disabled={uploading}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   </button>
-                  <p className="text-xs text-center mt-1 truncate" title={file.name}>
+                  <p className="text-xs text-center mt-1 truncate px-1" title={file.name}>
                     {file.name}
                   </p>
                 </div>
@@ -403,10 +405,12 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
         <Button
           onClick={handleUpload}
           disabled={uploading || files.length === 0 || !patientId.trim()}
-          className="w-full"
+          className="w-full min-h-[48px] touch-manipulation"
           size="lg"
         >
-          {uploading ? 'Fazendo Upload...' : `Fazer Upload (${files.length} imagem${files.length !== 1 ? 's' : ''})`}
+          <span className="text-sm sm:text-base">
+            {uploading ? 'Fazendo Upload...' : `Fazer Upload (${files.length} imagem${files.length !== 1 ? 's' : ''})`}
+          </span>
         </Button>
       </CardContent>
     </Card>
