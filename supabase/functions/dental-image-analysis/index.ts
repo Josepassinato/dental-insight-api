@@ -991,9 +991,6 @@ serve(async (req) => {
               ]
             }
           }; */
-        }
-
-        // Validation & Quality Control
         if (analysis.image_quality_analysis?.overall_quality < 6) {
           throw new Error('Qualidade de imagem inadequada para análise precisa');
         }
