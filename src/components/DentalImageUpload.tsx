@@ -251,20 +251,79 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
             )}
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="examType">Tipo de Exame</Label>
-            <Select value={examType} onValueChange={setExamType} disabled={uploading}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="panoramic">Radiografia Panorâmica</SelectItem>
-                <SelectItem value="periapical">Periapical</SelectItem>
-                <SelectItem value="bitewing">Bitewing (Interproximal)</SelectItem>
-                <SelectItem value="cephalometric">Cefalométrica</SelectItem>
-                <SelectItem value="cbct">CBCT / Tomografia</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-base font-semibold text-foreground">Tipo de Análise Radiográfica</Label>
+              <p className="text-sm text-muted-foreground mt-1">Selecione o tipo de exame para análise de IA especializada</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                {
+                  value: "panoramic",
+                  title: "Radiografia Panorâmica",
+                  description: "Análise completa da arcada dentária, ATM e estruturas anatômicas",
+                  icon: "🦷"
+                },
+                {
+                  value: "periapical",
+                  title: "Periapical",
+                  description: "Análise detalhada da raiz dentária e região periapical",
+                  icon: "🔍"
+                },
+                {
+                  value: "bitewing",
+                  title: "Bitewing (Interproximal)",
+                  description: "Detecção de cáries proximais e nível ósseo alveolar",
+                  icon: "📏"
+                },
+                {
+                  value: "cephalometric",
+                  title: "Cefalométrica",
+                  description: "Análise ortodôntica e cefalométrica",
+                  icon: "📐"
+                },
+                {
+                  value: "cbct",
+                  title: "CBCT / Tomografia",
+                  description: "Análise 3D para implantes, cirurgias e endodontia",
+                  icon: "🏗️"
+                }
+              ].map((option) => (
+                <div
+                  key={option.value}
+                  className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                    examType === option.value
+                      ? 'border-primary bg-primary/5 shadow-md'
+                      : 'border-border hover:border-primary/50'
+                  } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={() => !uploading && setExamType(option.value)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="text-2xl">{option.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-medium text-foreground">{option.title}</h3>
+                        {examType === option.value && (
+                          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
+                    </div>
+                  </div>
+                  
+                  <input
+                    type="radio"
+                    name="examType"
+                    value={option.value}
+                    checked={examType === option.value}
+                    onChange={() => setExamType(option.value)}
+                    className="absolute top-4 right-4 h-4 w-4 text-primary focus:ring-primary"
+                    disabled={uploading}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
