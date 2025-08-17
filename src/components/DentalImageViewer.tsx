@@ -82,13 +82,19 @@ export function DentalImageViewer({
 
   const drawImageWithOverlay = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !originalImageUrl) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    
+    img.onerror = (error) => {
+      console.error('Error loading original image:', error);
+      setImageLoaded(false);
+      toast.error('Erro ao carregar imagem');
+    };
     
     img.onload = () => {
       canvas.width = img.width;
@@ -115,6 +121,9 @@ export function DentalImageViewer({
           ctx.globalAlpha = 0.8;
           ctx.drawImage(overlayImg, 0, 0);
           ctx.globalAlpha = 1;
+        };
+        overlayImg.onerror = (error) => {
+          console.error('Error loading overlay image:', error);
         };
         overlayImg.src = overlayImageUrl;
       }
@@ -262,12 +271,22 @@ export function DentalImageViewer({
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-0 bg-black overflow-hidden">
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center min-h-[400px]">
+              {!imageLoaded && (
+                <div className="text-white text-center">
+                  <div className="h-8 w-8 animate-spin border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Carregando imagem...</p>
+                </div>
+              )}
               <canvas
                 ref={canvasRef}
-                className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
+                className={`max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing ${
+                  !imageLoaded ? 'hidden' : ''
+                }`}
                 style={{
                   filter: imageLoaded ? 'none' : 'blur(5px)',
+                  minWidth: imageLoaded ? 'auto' : '100px',
+                  minHeight: imageLoaded ? 'auto' : '100px',
                 }}
               />
             </div>

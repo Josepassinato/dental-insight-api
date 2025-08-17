@@ -38,7 +38,7 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DentalImageUpload } from "@/components/DentalImageUpload";
-import { DentalImageViewer } from "@/components/DentalImageViewer";
+import { ExamViewerModal } from "@/components/ExamViewerModal";
 import { useRealtimeDentalImages } from "@/hooks/useRealtimeDentalImages";
 
 interface TenantPlan {
@@ -624,11 +624,8 @@ const Dashboard = () => {
 
       {/* Exam Viewer Modal */}
       {selectedExam && (
-        <DentalImageViewer
-          imageId={selectedExam.id}
-          originalImageUrl={selectedExam.file_path}
-          overlayImageUrl={selectedExam.overlay_file_path}
-          findings={selectedExam.findings || []}
+        <ExamViewerModal 
+          exam={selectedExam}
           onClose={() => setSelectedExam(null)}
         />
       )}
