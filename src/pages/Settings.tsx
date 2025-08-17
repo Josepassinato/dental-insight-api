@@ -84,6 +84,7 @@ const Settings = () => {
   const [googleCredentials, setGoogleCredentials] = useState("");
   const [googleProjectId, setGoogleProjectId] = useState("");
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'testing'>('unknown');
+  const [connectionDetails, setConnectionDetails] = useState<any>(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
   const navigate = useNavigate();
@@ -427,24 +428,47 @@ const Settings = () => {
   const testGoogleConnection = async () => {
     setTestingConnection(true);
     setConnectionStatus('testing');
+    setConnectionDetails(null);
     
     try {
+      let requestBody: any = { action: 'test' };
+      
+      // Se há JSON no campo, use-o para o teste
+      if (googleCredentials.trim()) {
+        try {
+          const parsedCredentials = JSON.parse(googleCredentials.trim());
+          requestBody.googleCredentials = parsedCredentials;
+        } catch (jsonError) {
+          toast.error("JSON inválido no campo. Corrija o formato ou limpe o campo para testar com segredos salvos.");
+          setConnectionStatus('disconnected');
+          setTestingConnection(false);
+          return;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('update-google-credentials', {
-        body: { action: 'test' }
+        body: requestBody
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        toast.success(data.message);
+      if (data && data.success) {
+        toast.success(data.message || "Conexão estabelecida com sucesso!");
         setConnectionStatus('connected');
+        setConnectionDetails(data);
+        
+        // Atualizar o Project ID se disponível
+        if (data.project_id && !googleProjectId) {
+          setGoogleProjectId(data.project_id);
+        }
       } else {
-        toast.error(data.message || 'Falha no teste de conexão');
+        toast.error(data?.message || 'Falha no teste de conexão');
         setConnectionStatus('disconnected');
+        setConnectionDetails(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error testing Google connection:', error);
-      toast.error("Erro ao testar conexão");
+      toast.error(`Erro ao testar conexão: ${error.message || error}`);
       setConnectionStatus('disconnected');
     } finally {
       setTestingConnection(false);
@@ -832,52 +856,130 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Connection Status */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {connectionStatus === 'connected' && (
-                      <>
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div>
-                          <p className="font-medium text-green-700">Conectado</p>
-                          <p className="text-sm text-muted-foreground">Google Cloud configurado com sucesso</p>
-                        </div>
-                      </>
-                    )}
-                    {connectionStatus === 'disconnected' && (
-                      <>
-                        <XCircle className="h-5 w-5 text-red-500" />
-                        <div>
-                          <p className="font-medium text-red-700">Desconectado</p>
-                          <p className="text-sm text-muted-foreground">Configuração necessária</p>
-                        </div>
-                      </>
-                    )}
-                    {connectionStatus === 'testing' && (
-                      <>
-                        <div className="h-5 w-5 animate-spin border-2 border-primary border-t-transparent rounded-full" />
-                        <div>
-                          <p className="font-medium">Testando conexão...</p>
-                          <p className="text-sm text-muted-foreground">Verificando credenciais</p>
-                        </div>
-                      </>
-                    )}
-                    {connectionStatus === 'unknown' && (
-                      <>
-                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                        <div>
-                          <p className="font-medium text-yellow-700">Status desconhecido</p>
-                          <p className="text-sm text-muted-foreground">Teste a conexão para verificar</p>
-                        </div>
-                      </>
-                    )}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {connectionStatus === 'connected' && (
+                        <>
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <div>
+                            <p className="font-medium text-green-700">Conectado</p>
+                            <p className="text-sm text-muted-foreground">Google Cloud configurado com sucesso</p>
+                          </div>
+                        </>
+                      )}
+                      {connectionStatus === 'disconnected' && (
+                        <>
+                          <XCircle className="h-5 w-5 text-red-500" />
+                          <div>
+                            <p className="font-medium text-red-700">Desconectado</p>
+                            <p className="text-sm text-muted-foreground">
+                              {googleCredentials.trim() ? 
+                                "Teste com JSON do campo ou salve as credenciais nos segredos" : 
+                                "Configure as credenciais nos segredos do Supabase"
+                              }
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      {connectionStatus === 'testing' && (
+                        <>
+                          <div className="h-5 w-5 animate-spin border-2 border-primary border-t-transparent rounded-full" />
+                          <div>
+                            <p className="font-medium">Testando conexão...</p>
+                            <p className="text-sm text-muted-foreground">
+                              {googleCredentials.trim() ? 
+                                "Verificando JSON fornecido" : 
+                                "Verificando credenciais dos segredos"
+                              }
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      {connectionStatus === 'unknown' && (
+                        <>
+                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                          <div>
+                            <p className="font-medium text-yellow-700">Status desconhecido</p>
+                            <p className="text-sm text-muted-foreground">Teste a conexão para verificar</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={testGoogleConnection}
+                      disabled={testingConnection}
+                    >
+                      {testingConnection ? "Testando..." : "Testar Conexão"}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={testGoogleConnection}
-                    disabled={testingConnection}
-                  >
-                    {testingConnection ? "Testando..." : "Testar Conexão"}
-                  </Button>
+
+                  {/* Connection Details */}
+                  {connectionDetails && connectionStatus === 'connected' && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-medium text-green-900 mb-3">✅ Detalhes da Conexão</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {connectionDetails.project_id && (
+                          <div>
+                            <span className="font-medium text-green-800">Project ID:</span>
+                            <span className="ml-2 text-green-700">{connectionDetails.project_id}</span>
+                          </div>
+                        )}
+                        {connectionDetails.client_email && (
+                          <div>
+                            <span className="font-medium text-green-800">Client Email:</span>
+                            <span className="ml-2 text-green-700 truncate block">{connectionDetails.client_email}</span>
+                          </div>
+                        )}
+                        {connectionDetails.credentials_source && (
+                          <div>
+                            <span className="font-medium text-green-800">Origem:</span>
+                            <span className="ml-2 text-green-700">
+                              {connectionDetails.credentials_source === 'provided_json' ? 'JSON fornecido' : 'Segredos salvos'}
+                            </span>
+                          </div>
+                        )}
+                        {connectionDetails.tests && (
+                          <div className="md:col-span-2">
+                            <span className="font-medium text-green-800">APIs Testadas:</span>
+                            <div className="ml-2 mt-1 space-y-1">
+                              {connectionDetails.tests.project_api && (
+                                <div className="text-green-700 text-xs">
+                                  ✓ Cloud Resource Manager API: {connectionDetails.tests.project_api.status}
+                                </div>
+                              )}
+                              {connectionDetails.tests.storage_api && (
+                                <div className="text-green-700 text-xs">
+                                  ✓ Cloud Storage API: {connectionDetails.tests.storage_api.status}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {connectionDetails.credentials_source === 'provided_json' && (
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm">
+                          <p className="text-amber-800">
+                            💡 <strong>Dica:</strong> O teste funcionou com o JSON fornecido. Para persistir a configuração, 
+                            salve as credenciais nos segredos do Supabase usando o link acima.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Error Details */}
+                  {connectionDetails && connectionStatus === 'disconnected' && connectionDetails.error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h4 className="font-medium text-red-900 mb-2">❌ Erro na Conexão</h4>
+                      <p className="text-sm text-red-800">{connectionDetails.error}</p>
+                      {connectionDetails.message && (
+                        <p className="text-sm text-red-700 mt-2">{connectionDetails.message}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
