@@ -269,40 +269,141 @@ const Settings = () => {
     }
   };
 
+  const getCurrentUserTenantId = async () => {
+    try {
+      console.log("Settings: Obtendo tenant_id atual...");
+      
+      // First check if session is valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user?.id) {
+        console.error("Settings: Erro de sessão:", sessionError);
+        throw new Error('Sessão inválida. Faça login novamente.');
+      }
+
+      const userId = session.user.id;
+      console.log("Settings: User ID obtido:", userId);
+
+      // Get tenant_id from profile with retry logic
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', userId)
+            .single();
+
+          if (profileError) {
+            console.error(`Settings: Erro ao buscar perfil (tentativa ${retryCount + 1}):`, profileError);
+            if (retryCount === maxRetries - 1) {
+              throw new Error(`Erro ao obter perfil do usuário: ${profileError.message}`);
+            }
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Progressive delay
+            continue;
+          }
+
+          if (!profile?.tenant_id) {
+            console.log("Settings: tenant_id não encontrado no perfil, usando user_id como fallback");
+            return userId; // Use user_id as fallback
+          }
+
+          console.log("Settings: tenant_id encontrado:", profile.tenant_id);
+          return profile.tenant_id;
+        } catch (error) {
+          console.error(`Settings: Erro na tentativa ${retryCount + 1}:`, error);
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+    } catch (error) {
+      console.error("Settings: Erro ao obter tenant_id:", error);
+      throw error;
+    }
+  };
+
   const saveSettings = async () => {
-    if (!settings) return;
+    if (!settings) {
+      toast.error("Nenhuma configuração para salvar");
+      return;
+    }
 
     setSaving(true);
+    console.log("Settings: Iniciando salvamento...");
+    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      if (!userId) throw new Error('Usuário não autenticado');
+      // Get tenant ID with improved error handling
+      const tenantId = await getCurrentUserTenantId();
+      console.log("Settings: Salvando para tenant:", tenantId);
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', userId)
-        .maybeSingle();
+      // Validate settings before saving
+      if (!settings.ai_preferences || !settings.report_settings || 
+          !settings.notification_settings || !settings.branding_settings) {
+        throw new Error("Configurações incompletas. Recarregue a página e tente novamente.");
+      }
 
-      const tenantId = profile?.tenant_id as string | null;
-      if (!tenantId) throw new Error('Tenant não encontrado');
-
-      const { error } = await supabase
-        .from('tenant_settings')
-        .upsert({
-          tenant_id: tenantId,
-          ai_preferences: settings.ai_preferences,
-          report_settings: settings.report_settings,
-          notification_settings: settings.notification_settings,
-          branding_settings: settings.branding_settings,
-        });
-
-      if (error) throw error;
+      // Save with upsert and retry logic
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      toast.success("Configurações salvas com sucesso!");
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error("Erro ao salvar configurações");
+      while (retryCount < maxRetries) {
+        try {
+          const { error } = await supabase
+            .from('tenant_settings')
+            .upsert({
+              tenant_id: tenantId,
+              ai_preferences: settings.ai_preferences,
+              report_settings: settings.report_settings,
+              notification_settings: settings.notification_settings,
+              branding_settings: settings.branding_settings,
+            }, {
+              onConflict: 'tenant_id'
+            });
+
+          if (error) {
+            console.error(`Settings: Erro no salvamento (tentativa ${retryCount + 1}):`, error);
+            if (retryCount === maxRetries - 1) {
+              throw new Error(`Falha ao salvar configurações: ${error.message}`);
+            }
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            continue;
+          }
+
+          console.log("Settings: Configurações salvas com sucesso!");
+          toast.success("Configurações salvas com sucesso!");
+          break;
+        } catch (error) {
+          console.error(`Settings: Erro na tentativa de salvamento ${retryCount + 1}:`, error);
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+    } catch (error: any) {
+      console.error('Settings: Erro final no salvamento:', error);
+      
+      // Provide specific error messages
+      let errorMessage = "Erro ao salvar configurações";
+      if (error.message?.includes('Sessão inválida')) {
+        errorMessage = "Sessão expirada. Faça login novamente.";
+        setTimeout(() => navigate("/auth"), 2000);
+      } else if (error.message?.includes('Tenant não encontrado')) {
+        errorMessage = "Erro de permissão. Contate o suporte.";
+      } else if (error.message?.includes('configurações incompletas')) {
+        errorMessage = error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -389,6 +490,8 @@ const Settings = () => {
     }
 
     setSavingCredentials(true);
+    console.log("Settings: Validando credenciais Google Cloud...");
+    
     try {
       // Primeiro, validar o JSON
       let parsedCredentials;
@@ -397,6 +500,8 @@ const Settings = () => {
       } catch (error) {
         throw new Error("JSON inválido. Verifique o formato da chave.");
       }
+
+      console.log("Settings: JSON validado, verificando campos obrigatórios...");
 
       // Validar campos obrigatórios
       const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
@@ -413,12 +518,73 @@ const Settings = () => {
       // Preenche o Project ID automaticamente para facilitar
       setGoogleProjectId(parsedCredentials.project_id || '');
 
-      toast.success("JSON validado com sucesso! Use o campo de Project ID e o link abaixo para salvar nos segredos do Supabase.");
-      setConnectionStatus('disconnected'); // Ainda não salvo nos segredos
+      console.log("Settings: Validação completa, tentando salvar via edge function...");
+
+      // Try to call the edge function to validate and potentially save
+      let retryCount = 0;
+      const maxRetries = 3;
+      let lastError;
+
+      while (retryCount < maxRetries) {
+        try {
+          const { data, error } = await supabase.functions.invoke('update-google-credentials', {
+            body: {
+              action: 'update',
+              googleCredentials: googleCredentials.trim()
+            }
+          });
+
+          if (error) {
+            console.error(`Settings: Erro na edge function (tentativa ${retryCount + 1}):`, error);
+            lastError = error;
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+              continue;
+            }
+            throw error;
+          }
+
+          if (data?.success) {
+            console.log("Settings: Credenciais validadas via edge function");
+            toast.success("Credenciais validadas com sucesso! Use o link abaixo para configurar os segredos no Supabase.");
+            setConnectionStatus('disconnected'); // Ainda precisa configurar segredos
+          } else {
+            throw new Error(data?.message || 'Falha na validação das credenciais');
+          }
+          break;
+        } catch (error) {
+          console.error(`Settings: Erro na tentativa ${retryCount + 1}:`, error);
+          lastError = error;
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          }
+        }
+      }
+
+      if (retryCount >= maxRetries) {
+        // Fallback to local validation only
+        console.log("Settings: Edge function falhou, usando validação local apenas");
+        toast.success("JSON validado localmente. Use o link abaixo para configurar manualmente nos segredos do Supabase.");
+        setConnectionStatus('disconnected');
+      }
       
-    } catch (error) {
-      console.error('Error validating Google credentials:', error);
-      toast.error(`Erro ao validar credenciais: ${error.message}`);
+    } catch (error: any) {
+      console.error('Settings: Erro ao validar credenciais:', error);
+      
+      let errorMessage = "Erro ao validar credenciais";
+      if (error.message?.includes('JSON inválido')) {
+        errorMessage = error.message;
+      } else if (error.message?.includes('Campo obrigatório')) {
+        errorMessage = error.message;
+      } else if (error.message?.includes('Tipo de credencial')) {
+        errorMessage = error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
     } finally {
       setSavingCredentials(false);
@@ -429,6 +595,7 @@ const Settings = () => {
     setTestingConnection(true);
     setConnectionStatus('testing');
     setConnectionDetails(null);
+    console.log("Settings: Iniciando teste de conexão Google Cloud...");
     
     try {
       let requestBody: any = { action: 'test' };
@@ -439,37 +606,93 @@ const Settings = () => {
           // Validar se é um JSON válido, mas enviar como string
           JSON.parse(googleCredentials.trim());
           requestBody.googleCredentials = googleCredentials.trim();
+          console.log("Settings: Usando credenciais do campo para teste");
         } catch (jsonError) {
           toast.error("JSON inválido no campo. Corrija o formato ou limpe o campo para testar com segredos salvos.");
           setConnectionStatus('disconnected');
           setTestingConnection(false);
           return;
         }
+      } else {
+        console.log("Settings: Testando com credenciais dos segredos Supabase");
       }
 
-      const { data, error } = await supabase.functions.invoke('update-google-credentials', {
-        body: requestBody
-      });
+      // Retry logic for edge function calls
+      let retryCount = 0;
+      const maxRetries = 3;
+      let lastError;
 
-      if (error) throw error;
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`Settings: Tentativa ${retryCount + 1} de chamada da edge function...`);
+          
+          const result = await Promise.race([
+            supabase.functions.invoke('update-google-credentials', {
+              body: requestBody
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout na conexão')), 30000)
+            )
+          ]) as any;
+          
+          const { data, error } = result;
 
-      if (data && data.success) {
-        toast.success(data.message || "Conexão estabelecida com sucesso!");
-        setConnectionStatus('connected');
-        setConnectionDetails(data);
-        
-        // Atualizar o Project ID se disponível
-        if (data.project_id && !googleProjectId) {
-          setGoogleProjectId(data.project_id);
+          if (error) {
+            console.error(`Settings: Erro na edge function (tentativa ${retryCount + 1}):`, error);
+            lastError = error;
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+              continue;
+            }
+            throw error;
+          }
+
+          console.log("Settings: Resposta da edge function:", data);
+
+          if (data && data.success) {
+            toast.success(data.message || "Conexão estabelecida com sucesso!");
+            setConnectionStatus('connected');
+            setConnectionDetails(data);
+            
+            // Atualizar o Project ID se disponível
+            if (data.project_id && !googleProjectId) {
+              setGoogleProjectId(data.project_id);
+            }
+          } else {
+            const errorMsg = data?.message || 'Falha no teste de conexão';
+            console.error("Settings: Teste falhou:", errorMsg);
+            toast.error(errorMsg);
+            setConnectionStatus('disconnected');
+            setConnectionDetails(data);
+          }
+          break;
+        } catch (error: any) {
+          console.error(`Settings: Erro na tentativa ${retryCount + 1}:`, error);
+          lastError = error;
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          }
         }
-      } else {
-        toast.error(data?.message || 'Falha no teste de conexão');
-        setConnectionStatus('disconnected');
-        setConnectionDetails(data);
+      }
+
+      if (retryCount >= maxRetries && lastError) {
+        throw lastError;
       }
     } catch (error: any) {
-      console.error('Error testing Google connection:', error);
-      toast.error(`Erro ao testar conexão: ${error.message || error}`);
+      console.error('Settings: Erro final no teste de conexão:', error);
+      
+      let errorMessage = "Erro ao testar conexão";
+      if (error.message?.includes('Timeout')) {
+        errorMessage = "Timeout na conexão. Verifique sua internet e tente novamente.";
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = "Erro de rede. Verifique sua conexão.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
     } finally {
       setTestingConnection(false);
