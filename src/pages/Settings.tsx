@@ -89,18 +89,27 @@ const Settings = () => {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      try {
+        console.log("Settings: Verificando sessão...");
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.log("Settings: Sem sessão, redirecionando para auth");
+          navigate("/auth");
+          return;
+        }
 
-      setSession(session);
-      setUser(session.user);
-      await loadSettings();
-      await loadApiKeys();
-      setLoading(false);
+        console.log("Settings: Sessão encontrada, carregando dados...");
+        setSession(session);
+        setUser(session.user);
+        await loadSettings();
+        await loadApiKeys();
+        setLoading(false);
+        console.log("Settings: Carregamento completo");
+      } catch (error) {
+        console.error("Settings: Erro durante inicialização:", error);
+        setLoading(false);
+      }
     };
 
     getSession();
@@ -119,21 +128,34 @@ const Settings = () => {
 
   const loadSettings = async () => {
     try {
+      console.log("Settings: Carregando configurações...");
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
-      if (!userId) return;
+      if (!userId) {
+        console.log("Settings: userId não encontrado");
+        return;
+      }
 
-      const { data: profile } = await supabase
+      console.log("Settings: Buscando perfil do usuário...");
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', userId)
         .maybeSingle();
 
+      if (profileError) {
+        console.error("Settings: Erro ao buscar perfil:", profileError);
+        throw profileError;
+      }
+
       const tenantId = profile?.tenant_id as string | null;
       if (!tenantId) {
+        console.log("Settings: Tenant não encontrado no perfil");
         toast.error("Tenant não encontrado");
         return;
       }
+
+      console.log("Settings: Tenant encontrado:", tenantId);
 
       const { data, error } = await supabase
         .from('tenant_settings')
