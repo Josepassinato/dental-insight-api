@@ -94,6 +94,91 @@ async function generateAccessToken(): Promise<string> {
     throw error;
 }
 
+// Fallback: analisar UMA imagem com OpenAI
+async function analyzeImageWithOpenAI(image: any, exam: any, supabase: any, base64: string, mime: string) {
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!openaiApiKey) {
+    throw new Error('OPENAI_API_KEY not configured');
+  }
+
+  const dataUrl = `data:${mime};base64,${base64}`;
+  const prompt = `Analise radiografia dental e retorne APENAS JSON válido com o seguinte formato:\n{ \"findings\": [...], \"overall_analysis\": { \"total_findings\": number, \"risk_level\": string, \"summary\": string } }`;
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+          ]
+        }
+      ],
+      max_tokens: 3000,
+      temperature: 0.1
+    })
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`OpenAI error ${resp.status}: ${t}`);
+  }
+
+  const ai = await resp.json();
+  const content = ai.choices?.[0]?.message?.content || '';
+  const jsonMatch = String(content).match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('OpenAI did not return valid JSON');
+  }
+  const parsed = JSON.parse(jsonMatch[0]);
+
+  const findings = parsed.findings || [];
+  const overallConfidence = findings.length > 0
+    ? findings.reduce((sum: number, f: any) => sum + (f.confidence || 0), 0) / findings.length
+    : 0.6;
+
+  await supabase
+    .from('dental_images')
+    .update({
+      processing_status: 'completed',
+      findings,
+      analysis_confidence: overallConfidence,
+      ai_analysis: {
+        provider: 'openai',
+        model: 'gpt-4o',
+        timestamp: new Date().toISOString(),
+        raw_response: parsed
+      }
+    })
+    .eq('id', image.id);
+
+  if (findings.length > 0) {
+    for (const f of findings) {
+      try {
+        await supabase.from('dental_findings').insert({
+          dental_image_id: image.id,
+          tenant_id: exam.tenant_id,
+          tooth_number: f.tooth_number,
+          finding_type: f.finding_type,
+          severity: f.clinical_severity || 'leve',
+          confidence: f.confidence || overallConfidence,
+          bbox_coordinates: f.bbox,
+          description: f.description
+        });
+      } catch (_) {}
+    }
+  }
+
+  return parsed;
+}
+
 // Função auxiliar para processar com OpenAI quando Google Cloud não está disponível
 async function processWithOpenAI(examId: string, supabase: any) {
   try {
@@ -888,13 +973,20 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error analyzing image:', image.id, error);
         
-        await supabase
-          .from('dental_images')
-          .update({ 
-            processing_status: 'failed',
-            ai_analysis: { error: error.message }
-          })
-          .eq('id', image.id);
+        // Tentar fallback com OpenAI para esta imagem
+        try {
+          await analyzeImageWithOpenAI(image, exam, supabase, base64, mime);
+          console.log('Fallback OpenAI analysis succeeded for image:', image.id);
+        } catch (fallbackError) {
+          console.error('OpenAI fallback also failed for image:', image.id, fallbackError);
+          await supabase
+            .from('dental_images')
+            .update({ 
+              processing_status: 'failed',
+              ai_analysis: { error: String((fallbackError as any)?.message || fallbackError) }
+            })
+            .eq('id', image.id);
+        }
       }
     }
 
