@@ -117,7 +117,7 @@ export function ExamResult({ result }: ExamResultProps) {
       'impactacao': 'Impactação',
       'fratura': 'Fratura'
     };
-    return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return labels[type] || (type ? type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Achado Não Especificado');
   };
 
   const getSeverityColor = (severity: string) => {
