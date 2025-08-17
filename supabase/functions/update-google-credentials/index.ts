@@ -47,18 +47,27 @@ serve(async (req) => {
         
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-        // Update the secret
-        const { error } = await supabaseAdmin
-          .from('vault.secrets')
-          .upsert({
-            name: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY',
-            secret: googleCredentials,
-            description: 'Google Cloud Service Account Key for AI Analysis'
-          });
+        // Update the secrets in Vault (service account key and project id)
+        const [{ error: credErr }, { error: projErr }] = await Promise.all([
+          supabaseAdmin
+            .from('vault.secrets')
+            .upsert({
+              name: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY',
+              secret: googleCredentials,
+              description: 'Google Cloud Service Account Key for AI Analysis'
+            }),
+          supabaseAdmin
+            .from('vault.secrets')
+            .upsert({
+              name: 'GOOGLE_CLOUD_PROJECT_ID',
+              secret: parsed.project_id,
+              description: 'Google Cloud Project ID for AI Analysis'
+            })
+        ]);
 
-        if (error) {
-          console.error('Error updating secret:', error);
-          throw new Error('Failed to update credentials in Supabase');
+        if (credErr || projErr) {
+          console.error('Error updating secrets:', credErr || projErr);
+          throw new Error('Failed to update Google Cloud secrets in Supabase');
         }
 
         console.log('Credentials updated successfully');
