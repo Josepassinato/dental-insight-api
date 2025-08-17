@@ -74,11 +74,16 @@ serve(async (req) => {
         const currentCredentials = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
         const projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID');
 
-        if (!currentCredentials) {
-          throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY ausente');
+        // Allow overriding via request body for diagnostics
+        let parsed: any;
+        if (googleCredentials) {
+          parsed = JSON.parse(googleCredentials);
+        } else {
+          if (!currentCredentials) {
+            throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY ausente');
+          }
+          parsed = JSON.parse(currentCredentials);
         }
-
-        const parsed = JSON.parse(currentCredentials);
 
         // Derive project id from the JSON if env var not set
         const effectiveProjectId = projectId || parsed.project_id;

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TestResult {
   success: boolean;
@@ -20,12 +21,29 @@ interface TestResult {
 const Diagnostics = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
+  const [jsonInput, setJsonInput] = useState<string>("");
 
   const runTest = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("update-google-credentials", {
         body: { action: "test" },
+      });
+      if (error) throw error as any;
+      setResult(data as TestResult);
+    } catch (e: any) {
+      setResult({ success: false, message: "Erro ao chamar função", error: e.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runTestWithJson = async () => {
+    if (!jsonInput.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-google-credentials", {
+        body: { action: "test", googleCredentials: jsonInput.trim() },
       });
       if (error) throw error as any;
       setResult(data as TestResult);
@@ -55,9 +73,9 @@ const Diagnostics = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button onClick={runTest} disabled={loading} className="shrink-0">
-              {loading ? "Testando..." : "Retestar"}
+              {loading ? "Testando..." : "Retestar (Secrets)"}
             </Button>
             <Button
               variant="outline"
@@ -66,6 +84,22 @@ const Diagnostics = () => {
             >
               Abrir logs da função
             </Button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Testar com JSON da Service Account (diagnóstico opcional)</label>
+            <Textarea
+              placeholder="Cole aqui o JSON completo da Service Account para testar sem depender dos secrets"
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              className="min-h-[140px]"
+            />
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={runTestWithJson} disabled={loading || !jsonInput.trim()}>
+                {loading ? "Testando..." : "Testar com JSON"}
+              </Button>
+              <Button variant="ghost" onClick={() => setJsonInput("")}>Limpar</Button>
+            </div>
           </div>
 
           <pre className="text-sm rounded-md p-4 bg-muted overflow-auto max-h-[60vh]">
@@ -78,3 +112,4 @@ const Diagnostics = () => {
 };
 
 export default Diagnostics;
+
