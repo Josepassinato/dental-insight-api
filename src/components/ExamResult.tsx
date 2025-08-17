@@ -29,7 +29,11 @@ interface ExamResultProps {
 }
 
 export function ExamResult({ result }: ExamResultProps) {
-  const getFindingTypeLabel = (type: string) => {
+  const getFindingTypeLabel = (type: string | undefined | null) => {
+    // Handle undefined, null, or empty string cases
+    if (!type || typeof type !== 'string') {
+      return 'Achado Não Especificado';
+    }
     const labels: Record<string, string> = {
       // FASE 1: MODALIDADE CÁRIES
       'caries': 'Cárie',
