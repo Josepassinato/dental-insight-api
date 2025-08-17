@@ -26,7 +26,7 @@ const Diagnostics = () => {
   const runTest = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("update-google-credentials", {
+      const { data, error } = await supabase.functions.invoke("google-auth-test", {
         body: { action: "test" },
       });
       if (error) throw error as any;
@@ -42,7 +42,7 @@ const Diagnostics = () => {
     if (!jsonInput.trim()) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("update-google-credentials", {
+      const { data, error } = await supabase.functions.invoke("google-auth-test", {
         body: { action: "test", googleCredentials: jsonInput.trim() },
       });
       if (error) throw error as any;
@@ -57,8 +57,8 @@ const Diagnostics = () => {
   const runRealTest = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("google-cloud-test", {
-        body: jsonInput.trim() ? { testCredentials: jsonInput.trim() } : {},
+      const { data, error } = await supabase.functions.invoke("dental-analysis-v2", {
+        body: { action: "test", testCredentials: jsonInput.trim() || undefined },
       });
       if (error) throw error as any;
       setResult(data as TestResult);
@@ -97,7 +97,7 @@ const Diagnostics = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.open("https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/functions/update-google-credentials/logs", "_blank")}
+              onClick={() => window.open("https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/functions/google-auth-test/logs", "_blank")}
               className="shrink-0"
             >
               Abrir logs da função
