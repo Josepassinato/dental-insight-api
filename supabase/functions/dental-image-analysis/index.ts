@@ -467,8 +467,17 @@ serve(async (req) => {
     const examId = body?.examId as string | undefined;
     examIdGlobal = examId || null;
 
-    // Verificar se as credenciais Google Cloud estão disponíveis
+    // Verificação e diagnóstico das credenciais Google Cloud
+    console.log('🔐 Verificando secrets do Supabase:', {
+      hasGcpProjectId: !!gcpProjectId,
+      hasServiceAccountKey: !!serviceAccountKey,
+      gcpProjectIdLength: gcpProjectId?.length || 0,
+      serviceAccountKeyLength: serviceAccountKey?.length || 0,
+      serviceAccountKeyStart: serviceAccountKey?.substring(0, 20) || 'não definido'
+    });
+
     if (!gcpProjectId || !serviceAccountKey) {
+      console.log('⚠️ Google Cloud credentials não configuradas, usando OpenAI');
       if (!examId) {
         throw new Error('Missing examId');
       }
