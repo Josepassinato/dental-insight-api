@@ -81,12 +81,24 @@ serve(async (req) => {
     // Test connection
     if (action === 'test') {
       try {
-        // Try to get the current credentials from secrets
-        const currentCredentials = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
+        // Initialize Supabase admin client to get credentials from vault
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         
-        if (!currentCredentials) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+        // Get credentials from vault
+        const { data: secretData, error: secretError } = await supabaseAdmin
+          .from('vault.secrets')
+          .select('secret')
+          .eq('name', 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')
+          .single();
+
+        if (secretError || !secretData?.secret) {
           throw new Error('No credentials configured');
         }
+
+        const currentCredentials = secretData.secret;
 
         const parsed = JSON.parse(currentCredentials);
         
