@@ -93,6 +93,7 @@ async function generateAccessToken(): Promise<string> {
     console.error('Error generating access token:', error);
     throw error;
 }
+}
 
 // Fallback: analisar UMA imagem com OpenAI
 async function analyzeImageWithOpenAI(image: any, exam: any, supabase: any, base64: string, mime: string) {
