@@ -681,6 +681,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_medical_data: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_exam_quota: {
         Args: { tenant_uuid: string }
         Returns: boolean
@@ -697,9 +701,26 @@ export type Database = {
         Args: { user_uuid?: string }
         Returns: boolean
       }
+      log_sensitive_data_access: {
+        Args: {
+          operation: string
+          record_id: string
+          table_name: string
+          user_id?: string
+        }
+        Returns: undefined
+      }
       reset_monthly_usage: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_session_integrity: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      validate_tenant_access: {
+        Args: { target_tenant_id: string }
+        Returns: boolean
       }
     }
     Enums: {
