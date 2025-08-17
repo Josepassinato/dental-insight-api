@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Update Google Credentials function called');
+    console.log('Update Google Credentials function called v2');
 
     const { googleCredentials, action } = await req.json();
     
