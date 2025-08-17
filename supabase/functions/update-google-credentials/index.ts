@@ -87,18 +87,30 @@ serve(async (req) => {
         
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-        // Get credentials from vault
-        const { data: secretData, error: secretError } = await supabaseAdmin
-          .from('vault.secrets')
-          .select('secret')
-          .eq('name', 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')
-          .single();
+        // Get both credentials and project ID from vault
+        const [credentialsResult, projectIdResult] = await Promise.all([
+          supabaseAdmin
+            .from('vault.secrets')
+            .select('secret')
+            .eq('name', 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')
+            .single(),
+          supabaseAdmin
+            .from('vault.secrets')
+            .select('secret')
+            .eq('name', 'GOOGLE_CLOUD_PROJECT_ID')
+            .single()
+        ]);
 
-        if (secretError || !secretData?.secret) {
-          throw new Error('No credentials configured');
+        if (credentialsResult.error || !credentialsResult.data?.secret) {
+          throw new Error('Google Cloud credentials not configured');
         }
 
-        const currentCredentials = secretData.secret;
+        if (projectIdResult.error || !projectIdResult.data?.secret) {
+          throw new Error('Google Cloud Project ID not configured');
+        }
+
+        const currentCredentials = credentialsResult.data.secret;
+        const projectId = projectIdResult.data.secret;
 
         const parsed = JSON.parse(currentCredentials);
         
