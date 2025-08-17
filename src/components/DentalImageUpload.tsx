@@ -143,7 +143,7 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
       const { data: { session } } = await supabase.auth.getSession();
       
       const response = await fetch(
-        `https://blwnzwkkykaobmclsvxg.supabase.co/functions/v1/process-dental-upload`,
+        `https://blwnzwkkykaobmclsvxg.supabase.co/functions/v1/dental-upload-handler`,
         {
           method: 'POST',
           headers: {

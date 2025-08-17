@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.dental-analysis-v2]
 verify_jwt = false
+
+[functions.dental-upload-handler]
+verify_jwt = false
+
+[functions.generate-report]
+verify_jwt = false

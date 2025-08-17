@@ -527,7 +527,7 @@ const Settings = () => {
 
       while (retryCount < maxRetries) {
         try {
-          const { data, error } = await supabase.functions.invoke('update-google-credentials', {
+          const { data, error } = await supabase.functions.invoke('google-auth-test', {
             body: {
               action: 'update',
               googleCredentials: googleCredentials.trim()
@@ -627,7 +627,7 @@ const Settings = () => {
           console.log(`Settings: Tentativa ${retryCount + 1} de chamada da edge function...`);
           
           const result = await Promise.race([
-            supabase.functions.invoke('update-google-credentials', {
+            supabase.functions.invoke('google-auth-test', {
               body: requestBody
             }),
             new Promise((_, reject) => 

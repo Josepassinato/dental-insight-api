@@ -110,7 +110,7 @@ export function ReportGenerator({ exam, onReportGenerated }: ReportGeneratorProp
     setGenerating(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-dental-report', {
+      const { data, error } = await supabase.functions.invoke('generate-report', {
         body: { 
           examId: exam.id,
           templateId: selectedTemplate,
