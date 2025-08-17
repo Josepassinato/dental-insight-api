@@ -16,6 +16,7 @@ import Integrations from "./pages/Integrations";
 import BackupExport from "./pages/BackupExport";
 import FineTuning from "./pages/FineTuning";
 import ExamDetail from "./pages/ExamDetail";
+import Diagnostics from "./pages/Diagnostics";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/fine-tuning" element={<FineTuning />} />
           <Route path="/exam/:examId" element={<ExamDetail />} />
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
+          <Route path="/diagnostics" element={<Diagnostics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
