@@ -20,7 +20,19 @@ async function generateAccessToken(): Promise<string> {
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountKey);
+    // Handle both base64 encoded and direct JSON formats
+    let serviceAccountJson = serviceAccountKey;
+    
+    // Check if it's base64 encoded
+    try {
+      if (!serviceAccountKey.startsWith('{')) {
+        serviceAccountJson = atob(serviceAccountKey);
+      }
+    } catch (e) {
+      // If atob fails, assume it's already a JSON string
+    }
+    
+    const serviceAccount = JSON.parse(serviceAccountJson);
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       iss: serviceAccount.client_email,
@@ -501,12 +513,13 @@ serve(async (req) => {
           }
           
         } catch (error) {
-          console.error('Vertex AI failed, using mock analysis:', error);
+          console.error('Vertex AI failed:', error);
           
-          // Fallback to mock analysis if API fails
-          // Use mock analysis for demonstration when GCP auth fails
-          console.log('Using mock analysis for demonstration');
-          analysis = {
+          // Instead of using mock data, throw error to indicate real failure
+          throw new Error(`Falha na análise de IA: ${error.message}. Configuração do Google Cloud pode estar incorreta.`);
+          
+          // REMOVED: Mock analysis that was causing identical results
+          /* analysis = {
             image_quality_analysis: {
               resolution_score: 8.5,
               contrast_score: 8.2,
@@ -573,7 +586,7 @@ serve(async (req) => {
                 "Controle em 3 meses"
               ]
             }
-          };
+          }; */
         }
 
         // Validation & Quality Control
