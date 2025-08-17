@@ -84,7 +84,7 @@ const Dashboard = () => {
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
   
   // Use realtime hook for dental images
-  const { images: realtimeImages, loading: imagesLoading } = useRealtimeDentalImages();
+  const { images: realtimeImages, loading: imagesLoading, refetch: refetchImages } = useRealtimeDentalImages();
   const [filteredExams, setFilteredExams] = useState<ExamData[]>([]);
   
   // Filters
@@ -607,8 +607,10 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-background rounded-lg p-6 max-w-md w-full">
             <h2 className="text-lg font-semibold mb-4">Enviar Novo Exame</h2>
-            <DentalImageUpload onUploadComplete={() => {
+            <DentalImageUpload onUploadComplete={async () => {
               setShowUpload(false);
+              toast.success("Upload enviado! Iniciando análise...");
+              await refetchImages();
               loadDashboardData();
             }} />
             <Button
