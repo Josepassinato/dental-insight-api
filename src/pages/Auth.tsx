@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, LogIn, UserPlus, Building2 } from "lucide-react";
+import { Loader2, LogIn, UserPlus, Building2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { cleanupAuthState, forceAuthRefresh } from "@/utils/authCleanup";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,17 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Clean up existing state first
+      cleanupAuthState();
+      
+      // Attempt global sign out (ignore errors)
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -59,8 +70,10 @@ const Auth = () => {
         } else {
           setError(error.message);
         }
-      } else {
+      } else if (data.user) {
         toast.success("Login realizado com sucesso!");
+        // Force page reload for clean state
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       setError("Erro inesperado. Tente novamente.");
@@ -81,7 +94,7 @@ const Auth = () => {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -89,7 +102,7 @@ const Auth = () => {
             full_name: fullName,
             clinic_name: clinicName
           },
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
 
@@ -106,6 +119,24 @@ const Auth = () => {
       }
     } catch (error) {
       setError("Erro inesperado. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForceRefresh = async () => {
+    setLoading(true);
+    try {
+      const session = await forceAuthRefresh(supabase);
+      if (session) {
+        toast.success("Estado de autenticação limpo! Redirecionando...");
+        window.location.href = '/dashboard';
+      } else {
+        toast.success("Estado de autenticação limpo! Faça login novamente.");
+        setError("");
+      }
+    } catch (error) {
+      toast.error("Erro ao limpar estado de autenticação");
     } finally {
       setLoading(false);
     }
@@ -247,6 +278,31 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          
+          {/* Auth state cleanup option */}
+          <div className="mt-6 pt-4 border-t">
+            <p className="text-sm text-muted-foreground text-center mb-3">
+              Problemas para salvar alterações ou fazer login?
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={handleForceRefresh} 
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Limpando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Limpar Estado de Autenticação
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
