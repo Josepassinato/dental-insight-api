@@ -146,20 +146,21 @@ async function analyzeImageWithOpenAI(image: any, exam: any, supabase: any, base
       'Authorization': `Bearer ${openaiApiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
-          ]
-        }
-      ],
-      max_tokens: 3000,
-      temperature: 0.1
-    })
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+            ]
+          }
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 3000,
+        temperature: 0.1
+      })
   });
 
   if (!resp.ok) {
@@ -169,11 +170,13 @@ async function analyzeImageWithOpenAI(image: any, exam: any, supabase: any, base
 
   const ai = await resp.json();
   const content = ai.choices?.[0]?.message?.content || '';
-  const jsonMatch = String(content).match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('OpenAI did not return valid JSON');
+  let parsed: any = null;
+  try {
+    const jsonMatch = String(content).match(/\{[\s\S]*\}/);
+    parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { findings: [], overall_analysis: { total_findings: 0, risk_level: 'unknown', summary: 'Model returned non-JSON' } };
+  } catch (_e) {
+    parsed = { findings: [], overall_analysis: { total_findings: 0, risk_level: 'unknown', summary: 'Parse error from model output' } };
   }
-  const parsed = JSON.parse(jsonMatch[0]);
 
   const findings = parsed.findings || [];
   const overallConfidence = findings.length > 0
@@ -190,7 +193,8 @@ async function analyzeImageWithOpenAI(image: any, exam: any, supabase: any, base
         provider: 'openai',
         model: 'gpt-4o',
         timestamp: new Date().toISOString(),
-        raw_response: parsed
+        raw_response: parsed,
+        raw_text: content
       }
     })
     .eq('id', image.id);
@@ -341,6 +345,7 @@ async function processWithOpenAI(examId: string, supabase: any) {
                 ]
               }
             ],
+            response_format: { type: 'json_object' },
             max_tokens: 4000,
             temperature: 0.1
           })
@@ -357,18 +362,17 @@ async function processWithOpenAI(examId: string, supabase: any) {
           throw new Error('Empty response from OpenAI');
         }
 
-        // Parse AI response
-        let analysisResult;
+        // Parse AI response (robust: fallback to empty findings if not JSON)
+        let analysisResult: any = null;
         try {
-          // Clean the response to extract JSON
           const jsonMatch = content.match(/\{[\s\S]*\}/);
           if (!jsonMatch) {
-            throw new Error('No valid JSON found in AI response');
+            analysisResult = { findings: [], overall_analysis: { total_findings: 0, risk_level: 'unknown', summary: 'Model returned non-JSON' } };
+          } else {
+            analysisResult = JSON.parse(jsonMatch[0]);
           }
-          analysisResult = JSON.parse(jsonMatch[0]);
-        } catch (parseError) {
-          console.error('Failed to parse AI response:', content);
-          throw new Error('Invalid JSON response from AI');
+        } catch (_parseError) {
+          analysisResult = { findings: [], overall_analysis: { total_findings: 0, risk_level: 'unknown', summary: 'Parse error from model output' } };
         }
 
         const findings = analysisResult.findings || [];
@@ -387,7 +391,8 @@ async function processWithOpenAI(examId: string, supabase: any) {
               provider: 'openai',
               model: 'gpt-4o',
               timestamp: new Date().toISOString(),
-              raw_response: analysisResult
+              raw_response: analysisResult,
+              raw_text: content
             }
           })
           .eq('id', image.id);
