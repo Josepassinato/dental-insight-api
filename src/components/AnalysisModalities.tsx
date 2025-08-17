@@ -6,6 +6,9 @@ import {
   Circle, 
   Bone, 
   Heart,
+  Wrench,
+  Zap,
+  Triangle,
   AlertTriangle,
   CheckCircle,
   TrendingUp
@@ -17,16 +20,22 @@ interface AnalysisModalitiesProps {
 }
 
 export function AnalysisModalities({ findings, examType }: AnalysisModalitiesProps) {
-  // Categorizar achados por modalidade
+  // Categorizar achados por modalidade (FASE 2 - 6 modalidades)
   const categorizeFindings = (findings: any[]) => {
     const cariesTypes = ['caries', 'cavity', 'carie', 'carie_oclusal', 'carie_proximal', 'carie_oclusal_profunda', 'carie_cervical', 'carie_recorrente'];
     const periodontalTypes = ['periodontal', 'bone_loss', 'perda_ossea', 'gingivitis', 'calculus', 'calculo', 'gengivite', 'periodontite', 'perda_ossea_horizontal', 'perda_ossea_vertical', 'envolvimento_furca'];
     const periapicalTypes = ['periapical', 'periapical_lesion', 'root_canal_issue', 'lesao_periapical', 'granuloma_periapical', 'cisto_radicular', 'abscesso_agudo', 'reabsorcao_radicular', 'necrose_pulpar'];
+    const implantTypes = ['implant_analysis', 'implant_positioning', 'implant_integration', 'implant_failure', 'bone_density_low', 'bone_density_adequate', 'implant_crown_misalignment', 'peri_implantitis', 'implant_loosening', 'sinus_perforation', 'nerve_proximity', 'implant_angulation_error'];
+    const fractureTypes = ['fracture', 'root_fracture', 'crown_fracture', 'enamel_fracture', 'vertical_root_fracture', 'horizontal_root_fracture', 'alveolar_fracture', 'tooth_crack', 'craze_lines', 'split_tooth'];
+    const orthodonticTypes = ['orthodontic', 'malocclusion', 'crowding', 'spacing', 'overbite', 'underbite', 'crossbite', 'open_bite', 'dental_rotation', 'tooth_impaction', 'eruption_problem', 'midline_deviation', 'bracket_position', 'wire_problems', 'root_resorption_orthodontic'];
 
     return {
       caries: findings.filter(f => cariesTypes.includes(f.finding_type)),
       periodontal: findings.filter(f => periodontalTypes.includes(f.finding_type)),
-      periapical: findings.filter(f => periapicalTypes.includes(f.finding_type))
+      periapical: findings.filter(f => periapicalTypes.includes(f.finding_type)),
+      implants: findings.filter(f => implantTypes.includes(f.finding_type)),
+      fractures: findings.filter(f => fractureTypes.includes(f.finding_type)),
+      orthodontics: findings.filter(f => orthodonticTypes.includes(f.finding_type))
     };
   };
 
@@ -41,9 +50,9 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
       return acc;
     }, {});
 
-    if (severityCount.severa || severityCount.critico) {
+    if (severityCount.severa || severityCount.critico || severityCount.falha_integracao) {
       return { status: 'crítico', color: 'text-red-600', bg: 'bg-red-50' };
-    } else if (severityCount.moderada) {
+    } else if (severityCount.moderada || severityCount.complicacao || severityCount.classe_ii || severityCount.classe_iii) {
       return { status: 'atenção', color: 'text-orange-600', bg: 'bg-orange-50' };
     } else {
       return { status: 'leve', color: 'text-yellow-600', bg: 'bg-yellow-50' };
@@ -64,7 +73,8 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
       iconColor: 'text-red-600',
       findings: categorized.caries,
       status: getModalityStatus(categorized.caries),
-      confidence: getAverageConfidence(categorized.caries)
+      confidence: getAverageConfidence(categorized.caries),
+      phase: 1
     },
     {
       title: 'Análise Periodontal',
@@ -73,7 +83,8 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
       iconColor: 'text-orange-600',
       findings: categorized.periodontal,
       status: getModalityStatus(categorized.periodontal),
-      confidence: getAverageConfidence(categorized.periodontal)
+      confidence: getAverageConfidence(categorized.periodontal),
+      phase: 1
     },
     {
       title: 'Lesões Periapicais',
@@ -82,20 +93,51 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
       iconColor: 'text-purple-600',
       findings: categorized.periapical,
       status: getModalityStatus(categorized.periapical),
-      confidence: getAverageConfidence(categorized.periapical)
+      confidence: getAverageConfidence(categorized.periapical),
+      phase: 1
+    },
+    {
+      title: 'Análise de Implantes',
+      description: 'Avaliação de implantes e osseointegração',
+      icon: Wrench,
+      iconColor: 'text-cyan-600',
+      findings: categorized.implants,
+      status: getModalityStatus(categorized.implants),
+      confidence: getAverageConfidence(categorized.implants),
+      phase: 2
+    },
+    {
+      title: 'Detecção de Fraturas',
+      description: 'Identificação de fraturas dentais',
+      icon: Zap,
+      iconColor: 'text-pink-600',
+      findings: categorized.fractures,
+      status: getModalityStatus(categorized.fractures),
+      confidence: getAverageConfidence(categorized.fractures),
+      phase: 2
+    },
+    {
+      title: 'Análise Ortodôntica',
+      description: 'Avaliação de má oclusão e alinhamento',
+      icon: Triangle,
+      iconColor: 'text-blue-600',
+      findings: categorized.orthodontics,
+      status: getModalityStatus(categorized.orthodontics),
+      confidence: getAverageConfidence(categorized.orthodontics),
+      phase: 2
     }
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-2">Análise Tri-Modal Avançada</h2>
+        <h2 className="text-lg font-semibold mb-2">Análise Hexa-Modal Avançada - Fase 2</h2>
         <p className="text-sm text-muted-foreground">
-          Resultado das 3 modalidades de análise implementadas na Fase 1
+          Sistema completo com 6 modalidades especializadas: Cáries, Periodontal, Periapical, Implantes, Fraturas e Ortodontia
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {modalityData.map((modality, index) => {
           const Icon = modality.icon;
           return (
@@ -185,18 +227,18 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
         })}
       </div>
 
-      {/* Resumo Geral */}
+      {/* Resumo Geral Hexa-Modal */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="text-lg text-blue-900">Resumo da Análise Tri-Modal</CardTitle>
+          <CardTitle className="text-lg text-blue-900">Resumo da Análise Hexa-Modal - Fase 2</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">
                 {findings.length}
               </div>
-              <div className="text-xs text-blue-700">Total de Achados</div>
+              <div className="text-xs text-blue-700">Total</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">
@@ -208,13 +250,43 @@ export function AnalysisModalities({ findings, examType }: AnalysisModalitiesPro
               <div className="text-2xl font-bold text-orange-600">
                 {categorized.periodontal.length}
               </div>
-              <div className="text-xs text-orange-700">Periodontais</div>
+              <div className="text-xs text-orange-700">Periodontal</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">
                 {categorized.periapical.length}
               </div>
-              <div className="text-xs text-purple-700">Periapicais</div>
+              <div className="text-xs text-purple-700">Periapical</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-cyan-600">
+                {categorized.implants.length}
+              </div>
+              <div className="text-xs text-cyan-700">Implantes</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-pink-600">
+                {categorized.fractures.length}
+              </div>
+              <div className="text-xs text-pink-700">Fraturas</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-500">
+                {categorized.orthodontics.length}
+              </div>
+              <div className="text-xs text-blue-600">Ortodontia</div>
+            </div>
+          </div>
+          
+          {/* Badges de Fase */}
+          <div className="mt-4 pt-4 border-t border-blue-200">
+            <div className="flex justify-center gap-4">
+              <Badge variant="outline" className="text-xs">
+                Fase 1: {categorized.caries.length + categorized.periodontal.length + categorized.periapical.length} achados
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Fase 2: {categorized.implants.length + categorized.fractures.length + categorized.orthodontics.length} achados
+              </Badge>
             </div>
           </div>
         </CardContent>

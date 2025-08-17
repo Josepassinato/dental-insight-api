@@ -31,7 +31,7 @@ interface ExamResultProps {
 export function ExamResult({ result }: ExamResultProps) {
   const getFindingTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      // MODALIDADE CÁRIES
+      // FASE 1: MODALIDADE CÁRIES
       'caries': 'Cárie',
       'cavity': 'Cavidade',
       'carie': 'Cárie',
@@ -41,7 +41,7 @@ export function ExamResult({ result }: ExamResultProps) {
       'carie_cervical': 'Cárie Cervical',
       'carie_recorrente': 'Cárie Recorrente',
       
-      // MODALIDADE PERIODONTAL
+      // FASE 1: MODALIDADE PERIODONTAL
       'periodontal': 'Doença Periodontal',
       'bone_loss': 'Perda Óssea',
       'perda_ossea': 'Perda Óssea',
@@ -54,7 +54,7 @@ export function ExamResult({ result }: ExamResultProps) {
       'perda_ossea_vertical': 'Perda Óssea Vertical',
       'envolvimento_furca': 'Envolvimento de Furca',
       
-      // MODALIDADE PERIAPICAL
+      // FASE 1: MODALIDADE PERIAPICAL
       'periapical': 'Lesão Periapical',
       'periapical_lesion': 'Lesão Periapical',
       'root_canal_issue': 'Problema Endodôntico',
@@ -64,6 +64,49 @@ export function ExamResult({ result }: ExamResultProps) {
       'abscesso_agudo': 'Abscesso Agudo',
       'reabsorcao_radicular': 'Reabsorção Radicular',
       'necrose_pulpar': 'Necrose Pulpar',
+      
+      // FASE 2: MODALIDADE IMPLANTES
+      'implant_analysis': 'Análise de Implante',
+      'implant_positioning': 'Posicionamento de Implante',
+      'implant_integration': 'Integração de Implante',
+      'implant_failure': 'Falha de Implante',
+      'bone_density_low': 'Densidade Óssea Baixa',
+      'bone_density_adequate': 'Densidade Óssea Adequada',
+      'implant_crown_misalignment': 'Desalinhamento da Coroa',
+      'peri_implantitis': 'Peri-implantite',
+      'implant_loosening': 'Afrouxamento do Implante',
+      'sinus_perforation': 'Perfuração do Seio',
+      'nerve_proximity': 'Proximidade Neural',
+      'implant_angulation_error': 'Erro de Angulação',
+      
+      // FASE 2: MODALIDADE FRATURAS
+      'fracture': 'Fratura',
+      'root_fracture': 'Fratura Radicular',
+      'crown_fracture': 'Fratura Coronária',
+      'enamel_fracture': 'Fratura do Esmalte',
+      'vertical_root_fracture': 'Fratura Radicular Vertical',
+      'horizontal_root_fracture': 'Fratura Radicular Horizontal',
+      'alveolar_fracture': 'Fratura Alveolar',
+      'tooth_crack': 'Trinca Dental',
+      'craze_lines': 'Linhas de Fratura',
+      'split_tooth': 'Dente Rachado',
+      
+      // FASE 2: MODALIDADE ORTODÔNTICA
+      'orthodontic': 'Ortodôntico',
+      'malocclusion': 'Má Oclusão',
+      'crowding': 'Apinhamento',
+      'spacing': 'Espaçamento',
+      'overbite': 'Sobremordida',
+      'underbite': 'Prognatismo',
+      'crossbite': 'Mordida Cruzada',
+      'open_bite': 'Mordida Aberta',
+      'dental_rotation': 'Rotação Dental',
+      'tooth_impaction': 'Impactação Dental',
+      'eruption_problem': 'Problema de Erupção',
+      'midline_deviation': 'Desvio da Linha Média',
+      'bracket_position': 'Posição do Braquete',
+      'wire_problems': 'Problemas do Arco',
+      'root_resorption_orthodontic': 'Reabsorção Radicular Ortodôntica',
       
       // OUTROS
       'restauracao_defeituosa': 'Restauração Defeituosa',
@@ -77,11 +120,24 @@ export function ExamResult({ result }: ExamResultProps) {
     switch (severity?.toLowerCase()) {
       case 'critico':
       case 'severa':
+      case 'falha_integracao':
+      case 'classe_iii':
         return 'bg-red-100 text-red-800 border-red-300';
       case 'moderada':
+      case 'complicacao':
+      case 'classe_ii':
+      case 'grau_2':
         return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'leve':
+      case 'inicial':
+      case 'classe_i':
+      case 'grau_1':
+      case 'osseointegrado':
+      case 'sucesso':
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'parcialmente_integrado':
+      case 'grau_3':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }

@@ -201,11 +201,11 @@ serve(async (req) => {
 
         const dataUrl = `data:${mime};base64,${base64}`;
 
-        // FASE 1: Análise Tri-Modal Avançada - Cáries + Periodontal + Periapical
+        // FASE 2: Análise Hexa-Modal Avançada - 6 Especialidades Completas
         const analysisPrompt = `
-          ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA MULTI-MODAL
-          Análise integrada com precisão Google Medical AI para 3 especialidades:
-          🦷 CÁRIES | 🦴 PERIODONTAL | 🔴 LESÕES PERIAPICAIS
+          ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA HEXA-MODAL
+          Análise integrada com precisão Google Medical AI para 6 especialidades:
+          🦷 CÁRIES | 🦴 PERIODONTAL | 🔴 PERIAPICAL | 🔩 IMPLANTES | ⚡ FRATURAS | 📐 ORTODONTIA
 
           PROTOCOLO TRI-MODAL ULTRA-PRECISO:
           
@@ -267,24 +267,42 @@ serve(async (req) => {
              • Necrose pulpar: escurecimento da câmara pulpar
              • Obliteração do canal radicular
              
-          6. RESTAURAÇÕES E TRATAMENTOS - Avaliação técnica:
-             • Adaptação marginal inadequada
-             • Excesso/déficit de material
-             • Recidiva de cárie (radiolucência marginal)
-             • Qualidade de tratamentos endodônticos
-             • Presença de núcleos, pinos, coroas
-          
-          4. SISTEMA FDI RIGOROSO:
-             • Adultos: 11-18, 21-28, 31-38, 41-48
-             • Decíduos: 51-55, 61-65, 71-75, 81-85
-             • Verificação cruzada com anatomia e idade estimada
-          
-          5. COORDENADAS ULTRA-PRECISAS:
-             • Bbox ajustado às dimensões exatas da lesão
-             • Margem de 2-3 pixels para visualização
-             • Múltiplos pontos para lesões extensas
-          
-           7. CORES DIAGNÓSTICAS TRI-MODAIS:
+           6. MODALIDADE 4 - ANÁLISE DE IMPLANTES:
+              AVALIAÇÃO DE IMPLANTES - Critérios especializados:
+              • Posicionamento: angulação adequada, proximidade com estruturas
+              • Osseointegração: interface osso-implante, ausência de radiolucência
+              • Densidade óssea: adequada (>1000 HU), parcial (500-1000 HU), inadequada (<500 HU)
+              • Complicações: peri-implantite, mobilidade, fratura do implante
+              • Proximidade neural: distância canal mandibular, forame mentoniano
+              • Seio maxilar: perfuração, proximidade, elevação sinusal
+              • Coroa protética: adaptação, excesso de cimento, desadaptação
+              
+           7. MODALIDADE 5 - ANÁLISE DE FRATURAS:
+              DETECÇÃO DE FRATURAS - Sinais radiográficos:
+              • Fratura coronária: linha radiolúcida no esmalte/dentina
+              • Fratura radicular vertical: linha radiolúcida longitudinal
+              • Fratura radicular horizontal: linha radiolúcida transversal
+              • Fratura alveolar: descontinuidade do osso alveolar
+              • Trincas do esmalte: linhas finas superficiais
+              • Dente fissurado: extensão da fratura em dentina
+              • Dente separado: fratura completa com mobilidade
+              
+           8. MODALIDADE 6 - ANÁLISE ORTODÔNTICA:
+              AVALIAÇÃO ORTODÔNTICA - Parâmetros específicos:
+              • Má oclusão: Classe I, II, III de Angle
+              • Apinhamento: sobreposição dental, falta de espaço
+              • Diastemas: espaços excessivos entre dentes
+              • Sobremordida: sobreposição vertical excessiva
+              • Mordida cruzada: inversão da relação cúspide-fossa
+              • Mordida aberta: ausência de contato oclusal
+              • Rotações dentais: eixo longitudinal alterado
+              • Impactações: dentes retidos, mal posicionados
+              • Problemas de erupção: atraso, ectopia, anquilose
+              • Desvio da linha média: assimetria facial
+              • Análise de braquetes: posicionamento, qualidade
+              • Reabsorção radicular ortodôntica: encurtamento apical
+
+           9. CORES DIAGNÓSTICAS HEXA-MODAIS:
               🦷 MODALIDADE CÁRIES:
               • Cárie inicial: #FF6B6B (vermelho claro)
               • Cárie extensa: #FF0000 (vermelho intenso)
@@ -301,6 +319,24 @@ serve(async (req) => {
               • Cisto: #9932CC (roxo escuro)
               • Abscesso: #FF1493 (rosa intenso)
               • Reabsorção: #B22222 (vermelho tijolo)
+              
+              🔩 MODALIDADE IMPLANTES:
+              • Implante bem posicionado: #00CED1 (turquesa)
+              • Implante mal posicionado: #FF4500 (laranja avermelhado)
+              • Peri-implantite: #DC143C (crimson)
+              • Proximidade neural: #FFD700 (amarelo)
+              
+              ⚡ MODALIDADE FRATURAS:
+              • Fratura coronária: #FF69B4 (rosa choque)
+              • Fratura radicular: #CD853F (marrom)
+              • Fratura alveolar: #8B4513 (marrom saddle)
+              • Trinca: #DDA0DD (ameixa)
+              
+              📐 MODALIDADE ORTODÔNTICA:
+              • Má oclusão: #4169E1 (azul royal)
+              • Apinhamento: #9370DB (violeta médio)
+              • Impactação: #20B2AA (verde mar)
+              • Rotação: #FF6347 (tomate)
               
               📋 GERAL:
               • Restauração: #1E90FF (azul)
