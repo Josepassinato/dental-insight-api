@@ -15,24 +15,47 @@ const gcpLocation = 'us-central1'; // Região padrão para Vertex AI
 
 // Function to generate JWT token for Vertex AI authentication
 async function generateAccessToken(): Promise<string> {
+  console.log('🔑 [AUTH-1] Iniciando geração de token de acesso...');
+  
   if (!serviceAccountKey) {
+    console.error('❌ [AUTH-ERROR] GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY não encontrada');
     throw new Error('Missing GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
   }
 
   try {
+    console.log('🔑 [AUTH-2] Processando service account key...');
+    
     // Handle both base64 encoded and direct JSON formats
     let serviceAccountJson = serviceAccountKey;
     
     // Check if it's base64 encoded
     try {
       if (!serviceAccountKey.startsWith('{')) {
+        console.log('🔑 [AUTH-3] Decodificando base64...');
         serviceAccountJson = atob(serviceAccountKey);
+      } else {
+        console.log('🔑 [AUTH-3] Usando JSON direto...');
       }
     } catch (e) {
+      console.log('🔑 [AUTH-3] Falha no base64, usando como JSON string...');
       // If atob fails, assume it's already a JSON string
     }
     
+    console.log('🔑 [AUTH-4] Parseando service account JSON...');
     const serviceAccount = JSON.parse(serviceAccountJson);
+    
+    // Validar campos obrigatórios
+    const requiredFields = ['client_email', 'private_key', 'project_id'];
+    for (const field of requiredFields) {
+      if (!serviceAccount[field]) {
+        console.error(`❌ [AUTH-ERROR] Campo obrigatório ausente: ${field}`);
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+    
+    console.log('🔑 [AUTH-5] Service account válido. Email:', serviceAccount.client_email);
+    console.log('🔑 [AUTH-6] Project ID:', serviceAccount.project_id);
+    
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       iss: serviceAccount.client_email,
@@ -42,6 +65,8 @@ async function generateAccessToken(): Promise<string> {
       iat: now,
     };
 
+    console.log('🔑 [AUTH-7] Criando JWT header e payload...');
+    
     // Create JWT header
     const header = {
       alg: 'RS256',
@@ -52,6 +77,8 @@ async function generateAccessToken(): Promise<string> {
     const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
+    console.log('🔑 [AUTH-8] Importando private key...');
+    
     // Import private key
     const privateKey = await crypto.subtle.importKey(
       'pkcs8',
@@ -64,12 +91,16 @@ async function generateAccessToken(): Promise<string> {
       ['sign']
     );
 
+    console.log('🔑 [AUTH-9] Assinando JWT...');
+    
     // Sign the JWT
     const signatureData = new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`);
     const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, signatureData);
     const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
     const jwt = `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
+    
+    console.log('🔑 [AUTH-10] Trocando JWT por access token...');
 
     // Exchange JWT for access token
     const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -84,15 +115,19 @@ async function generateAccessToken(): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`❌ [AUTH-ERROR] Token exchange failed: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`Token exchange failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const tokenData = await response.json();
+    console.log('✅ [AUTH-SUCCESS] Access token gerado com sucesso!');
+    
     return tokenData.access_token;
   } catch (error) {
-    console.error('Error generating access token:', error);
+    console.error('❌ [AUTH-FATAL] Erro na geração do access token:', error);
     throw error;
-}
+  }
 }
 
 // Fallback: analisar UMA imagem com OpenAI
@@ -454,8 +489,12 @@ serve(async (req) => {
     examIdGlobal = examId || null;
 
     // Verificar se as credenciais Google Cloud estão disponíveis
+    console.log('🔍 [INIT-1] Verificando configuração Google Cloud...');
+    console.log('🔍 [INIT-2] Project ID:', gcpProjectId ? '✅ Configurado' : '❌ Ausente');
+    console.log('🔍 [INIT-3] Service Account Key:', serviceAccountKey ? '✅ Configurado' : '❌ Ausente');
+    
     if (!gcpProjectId || !serviceAccountKey) {
-      console.log('Google Cloud credentials not found, using OpenAI fallback for exam:', examId);
+      console.log('⚠️ [FALLBACK] Google Cloud não configurado, usando OpenAI...');
       
       if (!examId) {
         throw new Error('Missing examId');
@@ -465,13 +504,16 @@ serve(async (req) => {
       return await processWithOpenAI(examId, supabase);
     }
 
+    console.log('✅ [INIT-SUCCESS] Google Cloud configurado! Prosseguindo com Vertex AI...');
+
     if (!examId) {
       throw new Error('Missing examId');
     }
 
-    console.log('Starting AI analysis for exam:', examId);
+    console.log('📊 [EXAM-1] Iniciando análise AI para exame:', examId);
 
     // Get exam and images
+    console.log('📊 [EXAM-2] Buscando dados do exame...');
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select('*, dental_images(*)')
@@ -479,10 +521,14 @@ serve(async (req) => {
       .single();
 
     if (examError || !exam) {
+      console.error('❌ [EXAM-ERROR] Exame não encontrado:', examError);
       throw new Error('Exam not found');
     }
 
+    console.log(`📊 [EXAM-3] Exame encontrado com ${exam.dental_images.length} imagens`);
+
     // Update exam status to processing
+    console.log('📊 [EXAM-4] Atualizando status do exame para "processing"...');
     await supabase
       .from('exams')
       .update({ 
@@ -492,12 +538,14 @@ serve(async (req) => {
       .eq('id', examId);
 
     // Process each image
+    console.log('🖼️ [PROCESSING] Iniciando processamento das imagens...');
     const analysisResults = [];
     
     for (const image of exam.dental_images) {
-      console.log('Analyzing image:', image.id);
+      console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Analisando imagem:`, image.original_filename);
 
       // Update image status to processing
+      console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Atualizando status para "processing"...`);
       await supabase
         .from('dental_images')
         .update({ processing_status: 'processing' })
@@ -505,6 +553,7 @@ serve(async (req) => {
 
       try {
         // Get the image from storage
+        console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Baixando imagem do storage...`);
         const { data: imageData } = await supabase.storage
           .from('dental-uploads')
           .download(image.file_path);
@@ -512,8 +561,11 @@ serve(async (req) => {
         if (!imageData) {
           throw new Error('Failed to download image');
         }
+        
+        console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Imagem baixada com sucesso (${imageData.size} bytes)`);
 
         // Convert to base64 and ensure valid image MIME
+        console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Convertendo para base64...`);
         const arrayBuffer = await imageData.arrayBuffer();
         const base64 = b64encode(new Uint8Array(arrayBuffer));
 
@@ -534,11 +586,13 @@ serve(async (req) => {
           // If it's DICOM or unknown, default to jpeg for analysis
           mime = mime === 'application/dicom' ? 'image/jpeg' : (inferMimeFromPath(image?.file_path) || 'image/jpeg');
         }
-        console.log('Preparing image for AI:', { id: image.id, path: image.file_path, dbMime: image?.mime_type, blobMime: (imageData as Blob)?.type, usedMime: mime, size: (arrayBuffer?.byteLength || 0) });
+        console.log(`🖼️ [IMG-${image.id.substring(0,8)}] MIME detectado:`, mime);
+        console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Tamanho base64:`, base64.length, 'caracteres');
 
         const dataUrl = `data:${mime};base64,${base64}`;
 
         // FASE 2: Análise Hexa-Modal Avançada - 6 Especialidades Completas
+        console.log(`🤖 [AI-${image.id.substring(0,8)}] Preparando prompt para Vertex AI...`);
         const analysisPrompt = `
           ESPECIALISTA EM RADIOLOGIA ODONTOLÓGICA HEXA-MODAL
           Análise integrada com precisão Google Medical AI para 6 especialidades:
@@ -788,60 +842,85 @@ serve(async (req) => {
         // Use Vertex AI with OAuth authentication
         let analysis: any;
         
+        console.log(`🤖 [AI-${image.id.substring(0,8)}] Iniciando chamada para Vertex AI...`);
+        
         try {
+          console.log(`🤖 [AI-${image.id.substring(0,8)}] Gerando access token...`);
           const accessToken = await generateAccessToken();
           
+          console.log(`🤖 [AI-${image.id.substring(0,8)}] Access token gerado! Fazendo chamada para Gemini...`);
+          const vertexAIUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`;
+          console.log(`🤖 [AI-${image.id.substring(0,8)}] URL:', vertexAIUrl`);
+          
           // Real Google Vertex AI call using OAuth token
-          const geminiResponse = await fetch(
-            `https://us-central1-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                contents: [{
-                  role: 'user',
-                  parts: [
-                    { text: `Sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.\n\n${analysisPrompt}` },
-                    { 
-                      inline_data: {
-                        mime_type: mime,
-                        data: base64
-                      }
+          const geminiResponse = await fetch(vertexAIUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                role: 'user',
+                parts: [
+                  { text: `Sistema de IA médica ultra-preciso para análise radiográfica dental. Sua precisão diagnóstica deve rivalizar com especialistas em radiologia odontológica. JAMAIS gere falsos positivos. Use confiança mínima de 0.85 para diagnósticos principais.\n\n${analysisPrompt}` },
+                  { 
+                    inline_data: {
+                      mime_type: mime,
+                      data: base64
                     }
-                  ]
-                }],
-                generation_config: {
-                  max_output_tokens: 3000,
-                  temperature: 0.1,
-                  top_p: 0.95,
-                  top_k: 20
-                }
-              }),
-            }
-          );
-
-          const aiResult = await geminiResponse.json();
-          if (!geminiResponse.ok) {
-            throw new Error(`Vertex AI error: ${aiResult.error?.message || 'Unknown error'}`);
+                  }
+                ]
+              }],
+              generation_config: {
+                max_output_tokens: 3000,
+                temperature: 0.1,
+                top_p: 0.95,
+                top_k: 20
+              }
+            }),
           }
+        );
 
-          // Parse Vertex AI response
-          const rawContent = String(aiResult?.candidates?.[0]?.content?.parts?.[0]?.text ?? '');
-          const cleaned = rawContent.replace(/```json|```/g, '').trim();
-          try {
-            analysis = JSON.parse(cleaned);
-          } catch (e) {
-            throw new Error('AI não retornou JSON válido para análise');
-          }
+        console.log(`🤖 [AI-${image.id.substring(0,8)}] Vertex AI respondeu com status:`, geminiResponse.status);
+
+        const aiResult = await geminiResponse.json();
+        if (!geminiResponse.ok) {
+          console.error(`❌ [AI-ERROR] Vertex AI falhou:`, {
+            status: geminiResponse.status,
+            statusText: geminiResponse.statusText,
+            error: aiResult
+          });
+          throw new Error(`Vertex AI error: ${aiResult.error?.message || 'Unknown error'}`);
+        }
+
+        console.log(`🤖 [AI-${image.id.substring(0,8)}] Vertex AI sucesso! Processando resposta...`);
+
+        // Parse Vertex AI response
+        const rawContent = String(aiResult?.candidates?.[0]?.content?.parts?.[0]?.text ?? '');
+        console.log(`🤖 [AI-${image.id.substring(0,8)}] Conteúdo bruto recebido:`, rawContent.substring(0, 200) + '...');
+        
+        const cleaned = rawContent.replace(/```json|```/g, '').trim();
+        try {
+          analysis = JSON.parse(cleaned);
+          console.log(`✅ [AI-${image.id.substring(0,8)}] JSON parseado com sucesso!`);
+        } catch (e) {
+          console.error(`❌ [AI-PARSE-ERROR] Falha ao parsear JSON:`, e);
+          console.error(`❌ [AI-PARSE-ERROR] Conteúdo que falhou:`, cleaned.substring(0, 500));
+          throw new Error('AI não retornou JSON válido para análise');
+        }
           
         } catch (error) {
-          console.error('Vertex AI failed:', error);
+          console.error(`❌ [VERTEX-FAILED] Vertex AI falhou para imagem ${image.id}:`, error);
           
           // Instead of using mock data, throw error to indicate real failure
           throw new Error(`Falha na análise de IA: ${error.message}. Configuração do Google Cloud pode estar incorreta.`);
+        }
+
+        console.log(`📊 [ANALYSIS-${image.id.substring(0,8)}] Análise Google Cloud concluída!`);
+        console.log(`📊 [ANALYSIS-${image.id.substring(0,8)}] Qualidade:`, analysis.image_quality_analysis?.overall_quality);
+        console.log(`📊 [ANALYSIS-${image.id.substring(0,8)}] Achados:`, analysis.findings?.length || 0);
+        console.log(`📊 [ANALYSIS-${image.id.substring(0,8)}] Confiança média:`, analysis.clinical_summary?.diagnostic_confidence);
           
           // REMOVED: Mock analysis that was causing identical results
           /* analysis = {
@@ -929,15 +1008,21 @@ serve(async (req) => {
            Findings: ${analysis.findings?.length || 0}, 
            Avg Confidence: ${analysis.clinical_summary?.diagnostic_confidence}`);
         
-
         // Generate overlay PNG if we have overlay instructions
+        console.log(`🎨 [OVERLAY-${image.id.substring(0,8)}] Verificando se precisa gerar overlay...`);
         let overlayPath = null;
         if (analysis.overlay_instructions && analysis.overlay_instructions.length > 0) {
+          console.log(`🎨 [OVERLAY-${image.id.substring(0,8)}] Gerando overlay com ${analysis.overlay_instructions.length} instruções...`);
           overlayPath = await generateOverlay(image, analysis.overlay_instructions, supabase);
+          console.log(`🎨 [OVERLAY-${image.id.substring(0,8)}] Overlay gerado:`, overlayPath);
+        } else {
+          console.log(`🎨 [OVERLAY-${image.id.substring(0,8)}] Nenhuma instrução de overlay encontrada`);
         }
 
         // Store structured findings in dental_findings table
+        console.log(`💾 [DB-${image.id.substring(0,8)}] Salvando achados estruturados...`);
         if (analysis.findings && analysis.findings.length > 0) {
+          console.log(`💾 [DB-${image.id.substring(0,8)}] Salvando ${analysis.findings.length} achados...`);
           for (const finding of analysis.findings) {
             await supabase
               .from('dental_findings')
@@ -955,6 +1040,7 @@ serve(async (req) => {
         }
 
         // Update image with comprehensive clinical AI analysis
+        console.log(`💾 [DB-${image.id.substring(0,8)}] Atualizando registro da imagem...`);
         await supabase
           .from('dental_images')
           .update({ 
@@ -969,17 +1055,18 @@ serve(async (req) => {
 
         analysisResults.push(analysis.clinical_summary || analysis.summary || analysis);
 
-        console.log('Image analysis completed:', image.id);
+        console.log(`✅ [SUCCESS-${image.id.substring(0,8)}] Análise da imagem concluída com sucesso!`);
 
       } catch (error) {
-        console.error('Error analyzing image:', image.id, error);
+        console.error(`❌ [ERROR-${image.id.substring(0,8)}] Erro na análise da imagem:`, error);
         
         // Tentar fallback com OpenAI para esta imagem
+        console.log(`🔄 [FALLBACK-${image.id.substring(0,8)}] Tentando fallback com OpenAI...`);
         try {
           await analyzeImageWithOpenAI(image, exam, supabase, base64, mime);
-          console.log('Fallback OpenAI analysis succeeded for image:', image.id);
+          console.log(`✅ [FALLBACK-SUCCESS-${image.id.substring(0,8)}] Fallback OpenAI bem-sucedido!`);
         } catch (fallbackError) {
-          console.error('OpenAI fallback also failed for image:', image.id, fallbackError);
+          console.error(`❌ [FALLBACK-FAILED-${image.id.substring(0,8)}] OpenAI fallback também falhou:`, fallbackError);
           await supabase
             .from('dental_images')
             .update({ 
@@ -991,10 +1078,13 @@ serve(async (req) => {
       }
     }
 
+    console.log('📈 [SUMMARY] Gerando resumo clínico do exame...');
     // Generate comprehensive clinical exam summary (safe against 0 images)
     const count = analysisResults.length;
     const sum = (sel: (r: any) => number, def = 0) => analysisResults.reduce((acc, r) => acc + (sel(r) || 0), 0);
     const avg = (sel: (r: any) => number, def: number | null = null) => count > 0 ? sum(sel) / count : def;
+    console.log(`📈 [SUMMARY] ${count} análises processadas de ${exam.dental_images.length} imagens totais`);
+    
     const examSummary = {
       total_images: exam.dental_images.length,
       analyzed_images: count,
@@ -1018,10 +1108,17 @@ serve(async (req) => {
         : 'Nenhuma imagem foi analisada com sucesso.'
     };
 
-    // Update exam with final comprehensive results
+    console.log('📈 [SUMMARY] Resumo gerado:', {
+      total_images: examSummary.total_images,
+      analyzed_images: examSummary.analyzed_images,
+      total_findings: examSummary.total_findings
+    });
+
+    // Mark exam as completed and save summary
+    console.log('💾 [EXAM-FINAL] Finalizando exame...');
     await supabase
       .from('exams')
-      .update({ 
+      .update({
         status: 'completed',
         ai_analysis: examSummary,
         processed_at: new Date().toISOString(),
@@ -1029,7 +1126,7 @@ serve(async (req) => {
       })
       .eq('id', examId);
 
-    console.log('Comprehensive exam analysis completed:', examId);
+    console.log('🎉 [SUCCESS] Análise do exame concluída com sucesso!');
 
     return new Response(
       JSON.stringify({ 
@@ -1044,23 +1141,32 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in dental-image-analysis:', error);
-
-    // Try to mark exam/images as failed so UI doesn't stay in "pending"
-    try {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      if (examIdGlobal) {
+    console.error('💥 [FATAL-ERROR] Erro crítico na análise do exame:', error);
+    
+    // Mark exam as failed with detailed error
+    if (examIdGlobal) {
+      console.log('💾 [CLEANUP] Marcando exame como failed...');
+      try {
         await supabase
           .from('exams')
-          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .update({ 
+            status: 'failed', 
+            ai_analysis: { 
+              error: String((error as any)?.message || error),
+              timestamp: new Date().toISOString()
+            }
+          })
           .eq('id', examIdGlobal);
+          
         await supabase
           .from('dental_images')
           .update({ processing_status: 'failed', ai_analysis: { error: String((error as any)?.message || error) } })
           .eq('exam_id', examIdGlobal);
+      } catch (markErr) {
+        console.error('💥 [CLEANUP-ERROR] Falha ao marcar exame como failed:', markErr);
       }
-    } catch (markErr) {
-      console.error('Also failed to mark exam/images as failed:', markErr);
+    } else {
+      console.error('💥 [CLEANUP-ERROR] examIdGlobal não disponível para cleanup');
     }
     
     return new Response(
