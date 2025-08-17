@@ -43,7 +43,8 @@ export const useRealtimeDentalImages = () => {
             )
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) {
         console.error('Error fetching dental images:', error);
