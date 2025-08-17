@@ -82,6 +82,7 @@ const Settings = () => {
   const [newApiKeyName, setNewApiKeyName] = useState("");
   const [generatedApiKey, setGeneratedApiKey] = useState<string | null>(null);
   const [googleCredentials, setGoogleCredentials] = useState("");
+  const [googleProjectId, setGoogleProjectId] = useState("");
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'testing'>('unknown');
   const [testingConnection, setTestingConnection] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
@@ -408,8 +409,10 @@ const Settings = () => {
         throw new Error('Tipo de credencial inválido. Esperado: service_account');
       }
 
-      // Salvar as credenciais nas variáveis de ambiente do Supabase
-      toast.success("JSON validado com sucesso! Use os botões abaixo para salvar nos segredos do Supabase.");
+      // Preenche o Project ID automaticamente para facilitar
+      setGoogleProjectId(parsedCredentials.project_id || '');
+
+      toast.success("JSON validado com sucesso! Use o campo de Project ID e o link abaixo para salvar nos segredos do Supabase.");
       setConnectionStatus('disconnected'); // Ainda não salvo nos segredos
       
     } catch (error) {
@@ -920,39 +923,54 @@ const Settings = () => {
                       </Button>
                     </div>
 
-                    {/* Buttons to save to Supabase secrets */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <h4 className="font-medium text-amber-900 mb-3">⚠️ Salvar nos Segredos do Supabase</h4>
-                      <p className="text-sm text-amber-800 mb-4">
-                        Após validar o JSON, use os botões abaixo para salvar as credenciais de forma segura:
-                      </p>
-                      <div className="flex gap-3">
+                    {/* Project ID Field */}
+                    <div className="space-y-2">
+                      <Label>Project ID do Google Cloud</Label>
+                      <Input
+                        value={googleProjectId}
+                        onChange={(e) => setGoogleProjectId(e.target.value)}
+                        placeholder="ex: meu-projeto-123"
+                      />
+                      <p className="text-xs text-muted-foreground">Opcional: será preenchido automaticamente ao validar o JSON.</p>
+                      <div className="flex gap-2 mt-2">
                         <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => {
-                            // Trigger secret modal for GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY
-                            const event = new CustomEvent('secrets--add_secret', {
-                              detail: { secret_name: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY' }
-                            });
-                            window.dispatchEvent(event);
-                          }}
+                          onClick={() => googleProjectId && copyApiKey(googleProjectId)}
+                          disabled={!googleProjectId}
                         >
-                          Salvar Chave Completa
+                          Copiar Project ID
                         </Button>
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={() => {
-                            // Trigger secret modal for GOOGLE_CLOUD_PROJECT_ID
-                            const event = new CustomEvent('secrets--add_secret', {
-                              detail: { secret_name: 'GOOGLE_CLOUD_PROJECT_ID' }
-                            });
-                            window.dispatchEvent(event);
-                          }}
+                          size="sm"
+                          onClick={() => googleCredentials.trim() && copyApiKey(googleCredentials.trim())}
+                          disabled={!googleCredentials.trim()}
                         >
-                          Salvar Project ID
+                          Copiar JSON
                         </Button>
                       </div>
+                    </div>
+
+                    {/* Instruções para salvar segredos */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <h4 className="font-medium text-amber-900 mb-3">⚠️ Como salvar os Segredos no Supabase</h4>
+                      <p className="text-sm text-amber-800 mb-2">
+                        Por segurança, os segredos devem ser salvos diretamente no Supabase. Após validar o JSON:
+                      </p>
+                      <ul className="text-sm text-amber-800 list-disc list-inside mb-3">
+                        <li>Abra a página de Segredos das Funções</li>
+                        <li>Crie/Atualize <code>GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY</code> com o JSON completo</li>
+                        <li>Crie/Atualize <code>GOOGLE_CLOUD_PROJECT_ID</code> com o seu Project ID</li>
+                      </ul>
+                      <a
+                        href="https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/settings/functions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-amber-900"
+                      >
+                        Abrir página de Segredos do Supabase
+                      </a>
                     </div>
                   </div>
 
