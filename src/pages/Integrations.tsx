@@ -27,18 +27,21 @@ import { toast } from "sonner";
 
 interface WebhookConfig {
   id: string;
+  tenant_id: string;
   name: string;
   url: string;
   events: string[];
   is_active: boolean;
   secret: string;
   created_at: string;
+  updated_at: string;
 }
 
 const Integrations = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [webhooksLoading, setWebhooksLoading] = useState(false);
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [newWebhook, setNewWebhook] = useState({
     name: '',
@@ -86,11 +89,29 @@ const Integrations = () => {
 
   const loadWebhooks = async () => {
     try {
-      // Simulated webhook data - in real implementation would load from database
-      setWebhooks([]);
+      setWebhooksLoading(true);
+      const { data, error } = await supabase
+        .from('webhooks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading webhooks:', error);
+        toast.error("Erro ao carregar webhooks");
+        return;
+      }
+
+      setWebhooks(data || []);
     } catch (error) {
       console.error('Error loading webhooks:', error);
+      toast.error("Erro ao carregar webhooks");
+    } finally {
+      setWebhooksLoading(false);
     }
+  };
+
+  const generateSecret = () => {
+    return `whsec_${crypto.randomUUID().replace(/-/g, '')}`;
   };
 
   const createWebhook = async () => {
@@ -99,36 +120,96 @@ const Integrations = () => {
       return;
     }
 
+    if (newWebhook.events.length === 0) {
+      toast.error("Selecione pelo menos um evento");
+      return;
+    }
+
     try {
-      const webhook: WebhookConfig = {
-        id: crypto.randomUUID(),
+      setWebhooksLoading(true);
+      
+      const webhookData = {
         name: newWebhook.name,
         url: newWebhook.url,
         events: newWebhook.events,
         is_active: true,
-        secret: `whsec_${crypto.randomUUID()}`,
-        created_at: new Date().toISOString()
+        secret: generateSecret()
       };
 
-      setWebhooks([...webhooks, webhook]);
+      const { data, error } = await supabase
+        .from('webhooks')
+        .insert([webhookData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating webhook:', error);
+        toast.error("Erro ao criar webhook");
+        return;
+      }
+
+      setWebhooks([data, ...webhooks]);
       setNewWebhook({ name: '', url: '', events: [] });
       setShowNewWebhook(false);
       toast.success("Webhook criado com sucesso!");
     } catch (error) {
       console.error('Error creating webhook:', error);
       toast.error("Erro ao criar webhook");
+    } finally {
+      setWebhooksLoading(false);
     }
   };
 
   const deleteWebhook = async (id: string) => {
-    setWebhooks(webhooks.filter(w => w.id !== id));
-    toast.success("Webhook removido com sucesso!");
+    try {
+      setWebhooksLoading(true);
+      
+      const { error } = await supabase
+        .from('webhooks')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting webhook:', error);
+        toast.error("Erro ao remover webhook");
+        return;
+      }
+
+      setWebhooks(webhooks.filter(w => w.id !== id));
+      toast.success("Webhook removido com sucesso!");
+    } catch (error) {
+      console.error('Error deleting webhook:', error);
+      toast.error("Erro ao remover webhook");
+    } finally {
+      setWebhooksLoading(false);
+    }
   };
 
   const toggleWebhook = async (id: string) => {
-    setWebhooks(webhooks.map(w => 
-      w.id === id ? { ...w, is_active: !w.is_active } : w
-    ));
+    try {
+      const webhook = webhooks.find(w => w.id === id);
+      if (!webhook) return;
+
+      const { error } = await supabase
+        .from('webhooks')
+        .update({ is_active: !webhook.is_active })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating webhook:', error);
+        toast.error("Erro ao atualizar webhook");
+        return;
+      }
+
+      setWebhooks(webhooks.map(w => 
+        w.id === id ? { ...w, is_active: !w.is_active } : w
+      ));
+      
+      toast.success(`Webhook ${!webhook.is_active ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (error) {
+      console.error('Error updating webhook:', error);
+      toast.error("Erro ao atualizar webhook");
+    }
   };
 
   const copySecret = (secret: string) => {
@@ -196,14 +277,24 @@ const Integrations = () => {
                     <Webhook className="h-5 w-5" />
                     Configuração de Webhooks
                   </CardTitle>
-                  <Button onClick={() => setShowNewWebhook(true)}>
+                  <Button 
+                    onClick={() => setShowNewWebhook(true)}
+                    disabled={webhooksLoading}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Novo Webhook
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {webhooks.length === 0 ? (
+                {webhooksLoading && (
+                  <div className="text-center py-4">
+                    <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-sm text-muted-foreground">Carregando webhooks...</p>
+                  </div>
+                )}
+
+                {!webhooksLoading && webhooks.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Webhook className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum webhook configurado</p>
@@ -222,11 +313,13 @@ const Integrations = () => {
                             <Switch
                               checked={webhook.is_active}
                               onCheckedChange={() => toggleWebhook(webhook.id)}
+                              disabled={webhooksLoading}
                             />
                             <Button
                               variant="destructive"
                               size="sm"
                               onClick={() => deleteWebhook(webhook.id)}
+                              disabled={webhooksLoading}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -239,6 +332,19 @@ const Integrations = () => {
                           <Badge variant="outline">
                             {webhook.events.length} eventos
                           </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm mb-2">
+                          <span className="text-muted-foreground">Eventos:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {webhook.events.map((event) => {
+                              const eventLabel = availableEvents.find(e => e.id === event)?.label || event;
+                              return (
+                                <Badge key={event} variant="outline" className="text-xs">
+                                  {eventLabel}
+                                </Badge>
+                              );
+                            })}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className="text-muted-foreground">Secret:</span>
@@ -269,6 +375,7 @@ const Integrations = () => {
                           value={newWebhook.name}
                           onChange={(e) => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="Ex: Sistema Integrado"
+                          disabled={webhooksLoading}
                         />
                       </div>
                       <div className="space-y-2">
@@ -277,6 +384,7 @@ const Integrations = () => {
                           value={newWebhook.url}
                           onChange={(e) => setNewWebhook(prev => ({ ...prev, url: e.target.value }))}
                           placeholder="https://seu-sistema.com/webhook"
+                          disabled={webhooksLoading}
                         />
                       </div>
                       <div className="space-y-2">
@@ -290,6 +398,7 @@ const Integrations = () => {
                                 checked={newWebhook.events.includes(event.id)}
                                 onChange={() => toggleEvent(event.id)}
                                 className="rounded"
+                                disabled={webhooksLoading}
                               />
                               <Label htmlFor={event.id} className="text-sm">
                                 {event.label}
@@ -299,10 +408,17 @@ const Integrations = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={createWebhook}>
-                          Criar Webhook
+                        <Button 
+                          onClick={createWebhook}
+                          disabled={webhooksLoading}
+                        >
+                          {webhooksLoading ? "Criando..." : "Criar Webhook"}
                         </Button>
-                        <Button variant="outline" onClick={() => setShowNewWebhook(false)}>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowNewWebhook(false)}
+                          disabled={webhooksLoading}
+                        >
                           Cancelar
                         </Button>
                       </div>
