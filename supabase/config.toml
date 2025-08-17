@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.update-google-credentials]
 verify_jwt = false
+
+[functions.google-cloud-test]
+verify_jwt = false

@@ -54,6 +54,21 @@ const Diagnostics = () => {
     }
   };
 
+  const runRealTest = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-cloud-test", {
+        body: jsonInput.trim() ? { testCredentials: jsonInput.trim() } : {},
+      });
+      if (error) throw error as any;
+      setResult(data as TestResult);
+    } catch (e: any) {
+      setResult({ success: false, message: "Erro ao chamar função de teste", error: e.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     document.title = "Diagnóstico Google Cloud | Dental Insight";
     runTest();
@@ -76,6 +91,9 @@ const Diagnostics = () => {
           <div className="flex gap-3 flex-wrap">
             <Button onClick={runTest} disabled={loading} className="shrink-0">
               {loading ? "Testando..." : "Retestar (Secrets)"}
+            </Button>
+            <Button variant="secondary" onClick={runRealTest} disabled={loading} className="shrink-0">
+              {loading ? "Testando..." : "🚀 Teste Completo"}
             </Button>
             <Button
               variant="outline"
