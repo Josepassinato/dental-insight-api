@@ -388,25 +388,33 @@ const Settings = () => {
 
     setSavingCredentials(true);
     try {
-      const { data, error } = await supabase.functions.invoke('update-google-credentials', {
-        body: { 
-          googleCredentials: googleCredentials.trim(),
-          action: 'update'
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        toast.success(data.message);
-        setConnectionStatus('connected');
-        setGoogleCredentials(""); // Clear the textarea for security
-      } else {
-        throw new Error(data.error || 'Erro desconhecido');
+      // Primeiro, validar o JSON
+      let parsedCredentials;
+      try {
+        parsedCredentials = JSON.parse(googleCredentials.trim());
+      } catch (error) {
+        throw new Error("JSON inválido. Verifique o formato da chave.");
       }
+
+      // Validar campos obrigatórios
+      const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
+      for (const field of requiredFields) {
+        if (!parsedCredentials[field]) {
+          throw new Error(`Campo obrigatório ausente: ${field}`);
+        }
+      }
+
+      if (parsedCredentials.type !== 'service_account') {
+        throw new Error('Tipo de credencial inválido. Esperado: service_account');
+      }
+
+      // Salvar as credenciais nas variáveis de ambiente do Supabase
+      toast.success("JSON validado com sucesso! Use os botões abaixo para salvar nos segredos do Supabase.");
+      setConnectionStatus('disconnected'); // Ainda não salvo nos segredos
+      
     } catch (error) {
-      console.error('Error updating Google credentials:', error);
-      toast.error(`Erro ao salvar credenciais: ${error.message}`);
+      console.error('Error validating Google credentials:', error);
+      toast.error(`Erro ao validar credenciais: ${error.message}`);
       setConnectionStatus('disconnected');
     } finally {
       setSavingCredentials(false);
@@ -900,7 +908,7 @@ const Settings = () => {
                         onClick={updateGoogleCredentials}
                         disabled={savingCredentials || !googleCredentials.trim()}
                       >
-                        {savingCredentials ? "Salvando..." : "Salvar Credenciais"}
+                        {savingCredentials ? "Validando..." : "Validar JSON"}
                       </Button>
                       
                       <Button
@@ -910,6 +918,41 @@ const Settings = () => {
                       >
                         Limpar
                       </Button>
+                    </div>
+
+                    {/* Buttons to save to Supabase secrets */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <h4 className="font-medium text-amber-900 mb-3">⚠️ Salvar nos Segredos do Supabase</h4>
+                      <p className="text-sm text-amber-800 mb-4">
+                        Após validar o JSON, use os botões abaixo para salvar as credenciais de forma segura:
+                      </p>
+                      <div className="flex gap-3">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // Trigger secret modal for GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY
+                            const event = new CustomEvent('secrets--add_secret', {
+                              detail: { secret_name: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY' }
+                            });
+                            window.dispatchEvent(event);
+                          }}
+                        >
+                          Salvar Chave Completa
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Trigger secret modal for GOOGLE_CLOUD_PROJECT_ID
+                            const event = new CustomEvent('secrets--add_secret', {
+                              detail: { secret_name: 'GOOGLE_CLOUD_PROJECT_ID' }
+                            });
+                            window.dispatchEvent(event);
+                          }}
+                        >
+                          Salvar Project ID
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
