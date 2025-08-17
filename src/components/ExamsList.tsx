@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Eye,
   Calendar,
-  User
+  User,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -33,9 +35,11 @@ interface Exam {
 interface ExamsListProps {
   refreshTrigger?: string;
   onExamSelect?: (exam: Exam) => void;
+  onExamEdit?: (exam: Exam) => void;
+  onExamDelete?: (examId: string) => void;
 }
 
-export function ExamsList({ refreshTrigger, onExamSelect }: ExamsListProps) {
+export function ExamsList({ refreshTrigger, onExamSelect, onExamEdit, onExamDelete }: ExamsListProps) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -217,15 +221,33 @@ export function ExamsList({ refreshTrigger, onExamSelect }: ExamsListProps) {
               </div>
 
               <div className="flex-shrink-0 ml-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onExamSelect?.(exam)}
-                  className="flex items-center gap-1"
-                >
-                  <Eye className="h-3 w-3" />
-                  Ver Detalhes
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onExamSelect?.(exam)}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-3 w-3" />
+                    Ver Detalhes
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onExamEdit?.(exam)}
+                    className="flex items-center gap-1"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onExamDelete?.(exam.id)}
+                    className="flex items-center gap-1 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
