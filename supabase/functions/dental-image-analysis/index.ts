@@ -20,16 +20,23 @@ async function generateAccessToken(): Promise<string> {
   }
 
   try {
-    // Handle both base64 encoded and direct JSON formats
-    let serviceAccountJson = serviceAccountKey;
+    // Handle both base64 encoded and direct JSON formats (trimming whitespace)
+    const raw = serviceAccountKey.trim();
+    let serviceAccountJson = raw;
     
-    // Check if it's base64 encoded
-    try {
-      if (!serviceAccountKey.startsWith('{')) {
-        serviceAccountJson = atob(serviceAccountKey);
+    // Detect base64 vs JSON
+    if (!raw.startsWith('{')) {
+      try {
+        const decoded = atob(raw);
+        serviceAccountJson = decoded.trim();
+      } catch (_e) {
+        throw new Error('Service account key is not valid JSON nor base64-encoded JSON');
       }
-    } catch (e) {
-      // If atob fails, assume it's already a JSON string
+    }
+    
+    // Some dashboards might strip curly braces; attempt to fix
+    if (!serviceAccountJson.trim().startsWith('{') && serviceAccountJson.includes('"type"')) {
+      serviceAccountJson = `{${serviceAccountJson}}`;
     }
     
     const serviceAccount = JSON.parse(serviceAccountJson);
@@ -61,10 +68,13 @@ async function generateAccessToken(): Promise<string> {
     const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
-    // Import private key
+    // Import private key (handle escaped newlines from env)
+    const pkPem = String(serviceAccount.private_key).replace(/\\n/g, '\n');
+    const pkBase64 = pkPem.replace(/-----BEGIN PRIVATE KEY-----|\n|-----END PRIVATE KEY-----/g, '');
+    const pkArray = new Uint8Array(atob(pkBase64).split('').map(c => c.charCodeAt(0)));
     const privateKey = await crypto.subtle.importKey(
       'pkcs8',
-      new Uint8Array(atob(serviceAccount.private_key.replace(/-----BEGIN PRIVATE KEY-----|\n|-----END PRIVATE KEY-----/g, '')).split('').map(c => c.charCodeAt(0))),
+      pkArray,
       {
         name: 'RSASSA-PKCS1-v1_5',
         hash: 'SHA-256',
@@ -531,6 +541,10 @@ serve(async (req) => {
         .update({ processing_status: 'processing' })
         .eq('id', image.id);
 
+      // Hoist for fallback scope
+      let base64: string | null = null;
+      let mime: string | null = null;
+
       try {
         // Get the image from storage
         console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Baixando imagem do storage...`);
@@ -547,7 +561,7 @@ serve(async (req) => {
         // Convert to base64 and ensure valid image MIME
         console.log(`🖼️ [IMG-${image.id.substring(0,8)}] Convertendo para base64...`);
         const arrayBuffer = await imageData.arrayBuffer();
-        const base64 = b64encode(new Uint8Array(arrayBuffer));
+        base64 = b64encode(new Uint8Array(arrayBuffer));
 
         const inferMimeFromPath = (path: string | undefined | null): string | null => {
           const lower = (path || '').toLowerCase();
@@ -561,7 +575,7 @@ serve(async (req) => {
           return null;
         };
 
-        let mime = (image?.mime_type as string) || (imageData as Blob)?.type || inferMimeFromPath(image?.file_path) || 'image/jpeg';
+        mime = (image?.mime_type as string) || (imageData as Blob)?.type || inferMimeFromPath(image?.file_path) || 'image/jpeg';
         if (!mime.startsWith('image/')) {
           // If it's DICOM or unknown, default to jpeg for analysis
           mime = mime === 'application/dicom' ? 'image/jpeg' : (inferMimeFromPath(image?.file_path) || 'image/jpeg');
@@ -829,7 +843,19 @@ serve(async (req) => {
           const accessToken = await generateAccessToken();
           
           console.log(`🤖 [AI-${image.id.substring(0,8)}] Access token gerado! Fazendo chamada para Gemini...`);
-          const vertexAIUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`;
+          // Derivar projectId do service account se o env estiver incorreto
+          let projectIdForVertex = gcpProjectId;
+          try {
+            const rawKey = (Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY') || '').trim();
+            let keyJson = rawKey.startsWith('{') ? rawKey : atob(rawKey);
+            const svc = JSON.parse(keyJson);
+            if (!projectIdForVertex || (projectIdForVertex?.length || 0) > 80) {
+              projectIdForVertex = svc.project_id;
+            }
+          } catch (_e) {
+            // ignore, will use env value
+          }
+          const vertexAIUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectIdForVertex}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`;
           console.log(`🤖 [AI-${image.id.substring(0,8)}] URL: ${vertexAIUrl}`);
           
           // Real Google Vertex AI call using OAuth token
@@ -1040,7 +1066,26 @@ serve(async (req) => {
         // Tentar fallback com OpenAI para esta imagem
         console.log(`🔄 [FALLBACK-${image.id.substring(0,8)}] Tentando fallback com OpenAI...`);
         try {
-          await analyzeImageWithOpenAI(image, exam, supabase, base64, mime);
+          // Ensure we have base64 and mime for fallback
+          if (!base64 || !mime) {
+            try {
+              const { data: imageData } = await supabase.storage
+                .from('dental-uploads')
+                .download(image.file_path);
+              if (imageData) {
+                const buf = await imageData.arrayBuffer();
+                base64 = b64encode(new Uint8Array(buf));
+                const lower = (image?.file_path || '').toLowerCase();
+                mime = image?.mime_type 
+                  || (imageData as Blob)?.type 
+                  || (lower.endsWith('.png') ? 'image/png' 
+                      : (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) ? 'image/jpeg' 
+                      : 'image/jpeg');
+              }
+            } catch (_) {}
+          }
+
+          await analyzeImageWithOpenAI(image, exam, supabase, base64 || '', mime || 'image/jpeg');
           console.log(`✅ [FALLBACK-SUCCESS-${image.id.substring(0,8)}] Fallback OpenAI bem-sucedido!`);
         } catch (fallbackError) {
           console.error(`❌ [FALLBACK-FAILED-${image.id.substring(0,8)}] OpenAI fallback também falhou:`, fallbackError);
