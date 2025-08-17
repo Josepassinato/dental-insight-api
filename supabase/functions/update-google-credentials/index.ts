@@ -47,34 +47,14 @@ serve(async (req) => {
         
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-        // Update the secrets in Vault (service account key and project id)
-        const [{ error: credErr }, { error: projErr }] = await Promise.all([
-          supabaseAdmin
-            .from('vault.secrets')
-            .upsert({
-              name: 'GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY',
-              secret: googleCredentials,
-              description: 'Google Cloud Service Account Key for AI Analysis'
-            }),
-          supabaseAdmin
-            .from('vault.secrets')
-            .upsert({
-              name: 'GOOGLE_CLOUD_PROJECT_ID',
-              secret: parsed.project_id,
-              description: 'Google Cloud Project ID for AI Analysis'
-            })
-        ]);
+        console.log('Credentials validated successfully');
 
-        if (credErr || projErr) {
-          console.error('Error updating secrets:', credErr || projErr);
-          throw new Error('Failed to update Google Cloud secrets in Supabase');
-        }
-
-        console.log('Credentials updated successfully');
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          message: 'Credenciais atualizadas com sucesso!',
+        // Note: Edge Functions cannot set secrets at runtime.
+        // Store your GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY (full JSON) and optional GOOGLE_CLOUD_PROJECT_ID
+        // using the project secrets in the dashboard. This endpoint only validates the JSON.
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Credenciais validadas. Salve-as como segredo para ativar a conexão.',
           project_id: parsed.project_id,
           client_email: parsed.client_email
         }), {
@@ -97,14 +77,14 @@ serve(async (req) => {
         if (!currentCredentials) {
           throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY ausente');
         }
-        if (!projectId) {
-          throw new Error('GOOGLE_CLOUD_PROJECT_ID ausente');
-        }
 
         const parsed = JSON.parse(currentCredentials);
         
-        // Basic validation - just check if we can parse and it has required fields
-        if (!parsed.project_id || !parsed.client_email) {
+        // Derive project id from the JSON if env var not set
+        let effectiveProjectId = projectId || parsed.project_id;
+        
+        // Basic validation
+        if (!effectiveProjectId || !parsed.client_email) {
           throw new Error('Invalid credential format');
         }
 
@@ -112,7 +92,7 @@ serve(async (req) => {
           success: true, 
           message: 'Conexão testada com sucesso!',
           status: 'connected',
-          project_id: parsed.project_id,
+          project_id: effectiveProjectId,
           client_email: parsed.client_email
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
