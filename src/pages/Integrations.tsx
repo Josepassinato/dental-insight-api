@@ -114,6 +114,21 @@ const Integrations = () => {
     return `whsec_${crypto.randomUUID().replace(/-/g, '')}`;
   };
 
+  const getCurrentUserTenantId = async () => {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user?.id)
+      .single();
+
+    if (error || !profile?.tenant_id) {
+      // If no tenant_id in profile, use user id as tenant_id
+      return user?.id || null;
+    }
+
+    return profile.tenant_id;
+  };
+
   const createWebhook = async () => {
     if (!newWebhook.name || !newWebhook.url) {
       toast.error("Nome e URL são obrigatórios");
@@ -128,12 +143,19 @@ const Integrations = () => {
     try {
       setWebhooksLoading(true);
       
+      const tenantId = await getCurrentUserTenantId();
+      if (!tenantId) {
+        toast.error("Erro ao obter ID do tenant");
+        return;
+      }
+
       const webhookData = {
         name: newWebhook.name,
         url: newWebhook.url,
         events: newWebhook.events,
         is_active: true,
-        secret: generateSecret()
+        secret: generateSecret(),
+        tenant_id: tenantId
       };
 
       const { data, error } = await supabase
