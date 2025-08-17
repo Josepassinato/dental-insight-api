@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   ArrowLeft,
   Settings as SettingsIcon,
@@ -25,7 +26,11 @@ import {
   Plus,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,6 +81,10 @@ const Settings = () => {
   const [showNewApiKey, setShowNewApiKey] = useState(false);
   const [newApiKeyName, setNewApiKeyName] = useState("");
   const [generatedApiKey, setGeneratedApiKey] = useState<string | null>(null);
+  const [googleCredentials, setGoogleCredentials] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'testing'>('unknown');
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -346,6 +355,71 @@ const Settings = () => {
     }
   };
 
+  const updateGoogleCredentials = async () => {
+    if (!googleCredentials.trim()) {
+      toast.error("Chave JSON é obrigatória");
+      return;
+    }
+
+    setSavingCredentials(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('update-google-credentials', {
+        body: { 
+          googleCredentials: googleCredentials.trim(),
+          action: 'update'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(data.message);
+        setConnectionStatus('connected');
+        setGoogleCredentials(""); // Clear the textarea for security
+      } else {
+        throw new Error(data.error || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('Error updating Google credentials:', error);
+      toast.error(`Erro ao salvar credenciais: ${error.message}`);
+      setConnectionStatus('disconnected');
+    } finally {
+      setSavingCredentials(false);
+    }
+  };
+
+  const testGoogleConnection = async () => {
+    setTestingConnection(true);
+    setConnectionStatus('testing');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('update-google-credentials', {
+        body: { action: 'test' }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(data.message);
+        setConnectionStatus('connected');
+      } else {
+        toast.error(data.message || 'Falha no teste de conexão');
+        setConnectionStatus('disconnected');
+      }
+    } catch (error) {
+      console.error('Error testing Google connection:', error);
+      toast.error("Erro ao testar conexão");
+      setConnectionStatus('disconnected');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const clearGoogleCredentials = () => {
+    setGoogleCredentials("");
+    setConnectionStatus('unknown');
+  };
+
   const copyApiKey = (key: string) => {
     navigator.clipboard.writeText(key);
     toast.success("API key copiada!");
@@ -434,11 +508,12 @@ const Settings = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="ai" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="ai">IA</TabsTrigger>
             <TabsTrigger value="reports">Relatórios</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
             <TabsTrigger value="branding">Visual</TabsTrigger>
+            <TabsTrigger value="integrations">Integrações</TabsTrigger>
             <TabsTrigger value="api">API</TabsTrigger>
           </TabsList>
 
@@ -704,6 +779,135 @@ const Settings = () => {
                         placeholder="#64748b"
                       />
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Integrations */}
+          <TabsContent value="integrations" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cloud className="h-5 w-5" />
+                  Integração Google Cloud
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Connection Status */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {connectionStatus === 'connected' && (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <div>
+                          <p className="font-medium text-green-700">Conectado</p>
+                          <p className="text-sm text-muted-foreground">Google Cloud configurado com sucesso</p>
+                        </div>
+                      </>
+                    )}
+                    {connectionStatus === 'disconnected' && (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <div>
+                          <p className="font-medium text-red-700">Desconectado</p>
+                          <p className="text-sm text-muted-foreground">Configuração necessária</p>
+                        </div>
+                      </>
+                    )}
+                    {connectionStatus === 'testing' && (
+                      <>
+                        <div className="h-5 w-5 animate-spin border-2 border-primary border-t-transparent rounded-full" />
+                        <div>
+                          <p className="font-medium">Testando conexão...</p>
+                          <p className="text-sm text-muted-foreground">Verificando credenciais</p>
+                        </div>
+                      </>
+                    )}
+                    {connectionStatus === 'unknown' && (
+                      <>
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        <div>
+                          <p className="font-medium text-yellow-700">Status desconhecido</p>
+                          <p className="text-sm text-muted-foreground">Teste a conexão para verificar</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={testGoogleConnection}
+                    disabled={testingConnection}
+                  >
+                    {testingConnection ? "Testando..." : "Testar Conexão"}
+                  </Button>
+                </div>
+
+                <Separator />
+
+                {/* Credentials Management */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium">Chave de Serviço Google Cloud</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Cole aqui o conteúdo completo do arquivo JSON da sua Service Account do Google Cloud
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Textarea
+                      value={googleCredentials}
+                      onChange={(e) => setGoogleCredentials(e.target.value)}
+                      placeholder={`{
+  "type": "service_account",
+  "project_id": "seu-projeto",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
+  "client_email": "...@seu-projeto.iam.gserviceaccount.com",
+  ...
+}`}
+                      className="min-h-[200px] font-mono text-sm"
+                    />
+
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={updateGoogleCredentials}
+                        disabled={savingCredentials || !googleCredentials.trim()}
+                      >
+                        {savingCredentials ? "Salvando..." : "Salvar Credenciais"}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={clearGoogleCredentials}
+                        disabled={!googleCredentials}
+                      >
+                        Limpar
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">📋 Como obter a chave do Google Cloud:</h4>
+                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Acesse o <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a></li>
+                      <li>Navegue para "IAM & Admin" → "Service Accounts"</li>
+                      <li>Crie ou selecione uma Service Account</li>
+                      <li>Clique em "Keys" → "Add Key" → "Create New Key"</li>
+                      <li>Escolha formato JSON e baixe o arquivo</li>
+                      <li>Copie todo o conteúdo do arquivo e cole no campo acima</li>
+                    </ol>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="font-medium text-amber-900 mb-2">⚠️ Importante:</h4>
+                    <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                      <li>Esta chave será armazenada de forma segura no Supabase</li>
+                      <li>Não compartilhe esta chave com terceiros</li>
+                      <li>A Service Account deve ter permissões para acessar Vertex AI</li>
+                      <li>O campo será limpo automaticamente após salvar por segurança</li>
+                    </ul>
                   </div>
                 </div>
               </CardContent>
