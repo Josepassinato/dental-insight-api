@@ -850,7 +850,7 @@ serve(async (req) => {
           
           console.log(`🤖 [AI-${image.id.substring(0,8)}] Access token gerado! Fazendo chamada para Gemini...`);
           const vertexAIUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/us-central1/publishers/google/models/gemini-1.5-pro-vision-001:generateContent`;
-          console.log(`🤖 [AI-${image.id.substring(0,8)}] URL:', vertexAIUrl`);
+          console.log(`🤖 [AI-${image.id.substring(0,8)}] URL: ${vertexAIUrl}`);
           
           // Real Google Vertex AI call using OAuth token
           const geminiResponse = await fetch(vertexAIUrl, {
