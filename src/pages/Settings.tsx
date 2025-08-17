@@ -436,8 +436,9 @@ const Settings = () => {
       // Se há JSON no campo, use-o para o teste
       if (googleCredentials.trim()) {
         try {
-          const parsedCredentials = JSON.parse(googleCredentials.trim());
-          requestBody.googleCredentials = parsedCredentials;
+          // Validar se é um JSON válido, mas enviar como string
+          JSON.parse(googleCredentials.trim());
+          requestBody.googleCredentials = googleCredentials.trim();
         } catch (jsonError) {
           toast.error("JSON inválido no campo. Corrija o formato ou limpe o campo para testar com segredos salvos.");
           setConnectionStatus('disconnected');
