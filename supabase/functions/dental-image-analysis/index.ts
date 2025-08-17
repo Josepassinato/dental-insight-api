@@ -1200,6 +1200,11 @@ async function generateOverlay(image: any, overlayInstructions: any[], supabase:
   try {
     console.log('Generating overlay for image:', image.id);
     
+    // Check canvas support in Supabase Edge runtime
+    if (typeof (globalThis as any).OffscreenCanvas === 'undefined') {
+      console.warn('Overlay generation skipped: OffscreenCanvas not supported in this environment');
+      return null;
+    }
     // Create canvas for overlay generation
     const canvas = new OffscreenCanvas(800, 600); // Default size, should be image dimensions
     const ctx = canvas.getContext('2d');
