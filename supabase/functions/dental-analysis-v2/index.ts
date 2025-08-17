@@ -183,6 +183,79 @@ serve(async (req) => {
             continue;
           }
 
+          // Analyze with Google Vision API
+          let analysisConfidence: number | null = null;
+          let aiAnalysis: any = null;
+
+          try {
+            // Move to processing
+            await supabase
+              .from('dental_images')
+              .update({ processing_status: 'processing' })
+              .eq('id', imageData.id);
+
+            const { data: fileBlob, error: downloadError } = await supabase
+              .storage
+              .from('dental-uploads')
+              .download(uploadData.path);
+
+            if (downloadError) {
+              throw downloadError;
+            }
+
+            const arrayBuffer = await fileBlob.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let j = 0; j < bytes.length; j++) {
+              binary += String.fromCharCode(bytes[j]);
+            }
+            const base64Content = btoa(binary);
+
+            const apiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY');
+            if (!apiKey) {
+              throw new Error('GOOGLE_CLOUD_API_KEY não configurada');
+            }
+
+            const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                requests: [{
+                  image: { content: base64Content },
+                  features: [
+                    { type: 'LABEL_DETECTION', maxResults: 10 }
+                  ]
+                }]
+              })
+            });
+
+            const visionJson = await visionResponse.json();
+            if (!visionResponse.ok) {
+              console.error('Vision API error:', visionJson);
+              throw new Error(visionJson.error?.message || 'Vision API request failed');
+            }
+
+            aiAnalysis = visionJson.responses?.[0] || {};
+            const topScore = aiAnalysis?.labelAnnotations?.[0]?.score;
+            analysisConfidence = typeof topScore === 'number' ? Math.round(topScore * 100) : null;
+
+            // Save analysis
+            await supabase
+              .from('dental_images')
+              .update({
+                processing_status: 'analyzed',
+                ai_analysis: aiAnalysis,
+                analysis_confidence: analysisConfidence
+              })
+              .eq('id', imageData.id);
+          } catch (analysisError) {
+            console.error('Analysis error:', analysisError);
+            await supabase
+              .from('dental_images')
+              .update({ processing_status: 'failed' })
+              .eq('id', imageData.id);
+          }
+
           processedImages.push({
             id: imageData.id,
             file_path: uploadData.path,
