@@ -1,73 +1,193 @@
-# Welcome to your Lovable project
+# Dental AI Platform
 
-## Project info
+Uma plataforma completa para análise de imagens dentais usando inteligência artificial, integrada com Google Cloud Vision API e Vertex AI.
 
-**URL**: https://lovable.dev/projects/dbbd540a-7710-4f23-a032-c3b4860212f5
+## 🚀 Funcionalidades
 
-## How can I edit this code?
+- **Análise de Imagens Dentais**: Upload e análise automática usando Google Cloud Vision API
+- **Gestão de Pacientes**: Controle completo de histórico e exames
+- **Relatórios Inteligentes**: Geração automática de relatórios com IA
+- **Integração Vertex AI**: Análise avançada usando modelos Gemini
+- **Dashboard Analytics**: Visualização de dados e métricas
+- **Autenticação Segura**: Sistema completo de autenticação e autorização
 
-There are several ways of editing your application.
+## 🛠️ Tecnologias
 
-**Use Lovable**
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **IA**: Google Cloud Vision API + Vertex AI (Gemini)
+- **Storage**: Supabase Storage
+- **Autenticação**: Supabase Auth
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dbbd540a-7710-4f23-a032-c3b4860212f5) and start prompting.
+## ⚙️ Configuração
 
-Changes made via Lovable will be committed automatically to this repo.
+### 1. Variáveis de Ambiente
 
-**Use your preferred IDE**
+O projeto usa as seguintes configurações do Supabase:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```env
+VITE_SUPABASE_PROJECT_ID="blwnzwkkykaobmclsvxg"
+VITE_SUPABASE_URL="https://blwnzwkkykaobmclsvxg.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="[chave_publica]"
 ```
 
-**Edit a file directly in GitHub**
+### 2. Configuração Google Cloud
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+#### Pré-requisitos
+1. Projeto no Google Cloud Platform
+2. APIs ativadas:
+   - Vision API
+   - Vertex AI API
+3. Service Account com as seguintes roles:
+   - `roles/aiplatform.user`
+   - `roles/vision.admin` (ou `roles/serviceusage.serviceUsageConsumer`)
+   - `roles/storage.objectViewer` (se usar GCS)
 
-**Use GitHub Codespaces**
+#### Configuração de Segredos no Supabase
+Configure os seguintes segredos no painel do Supabase:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+GOOGLE_CLOUD_PROJECT_ID=seu-projeto-id
+GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+```
 
-## What technologies are used for this project?
+### 3. Fluxo de Autenticação Google Cloud
 
-This project is built with:
+A aplicação usa autenticação JWT para acessar APIs do Google Cloud:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Geração JWT**: Assinado com private_key da Service Account
+2. **Obtenção Token**: Exchange JWT por access_token via OAuth2
+3. **Chamadas API**: Uso do access_token para autenticar requisições
 
-## How can I deploy this project?
+## 🧪 Testes
 
-Simply open [Lovable](https://lovable.dev/projects/dbbd540a-7710-4f23-a032-c3b4860212f5) and click on Share -> Publish.
+### Teste Vertex AI via Interface
+1. Acesse **Configurações → Integrações**
+2. Clique em **"Testar Vertex AI"**
+3. Verifique a resposta do modelo Gemini
 
-## Can I connect a custom domain to my Lovable project?
+### Teste via cURL
+```bash
+curl -s -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Teste rápido do Vertex AI"}' \
+  https://blwnzwkkykaobmclsvxg.functions.supabase.co/vertex-gemini-test
+```
 
-Yes, you can!
+### Teste Edge Function Dental Analysis
+```bash
+curl -s -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"action":"test"}' \
+  https://blwnzwkkykaobmclsvxg.functions.supabase.co/dental-analysis-v2
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🔧 Troubleshooting
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Erros Comuns
+
+#### 401 Unauthorized
+- **Causa**: Credenciais inválidas ou expiradas
+- **Solução**: Verificar Service Account e chaves no Supabase
+
+#### 403 Forbidden
+- **Causa**: Permissões insuficientes na Service Account
+- **Solução**: Adicionar roles necessárias no IAM
+
+#### 404 Not Found
+- **Causa**: Região ou modelo incorretos
+- **Solução**: Verificar se `us-central1` e `gemini-1.5-flash-001` estão corretos
+
+#### 400 Bad Request
+- **Causa**: Formato de request inválido
+- **Solução**: Verificar estrutura JSON do payload
+
+### Logs e Debug
+
+#### Edge Functions Logs
+- **Vertex AI**: [Logs vertex-gemini-test](https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/functions/vertex-gemini-test/logs)
+- **Dental Analysis**: [Logs dental-analysis-v2](https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/functions/dental-analysis-v2/logs)
+
+#### Verificação de Secrets
+- [Painel de Segredos](https://supabase.com/dashboard/project/blwnzwkkykaobmclsvxg/settings/functions)
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── components/          # Componentes React
+├── pages/              # Páginas da aplicação
+├── lib/                # Utilitários e clientes
+│   └── vertexClient.ts # Cliente Vertex AI
+├── integrations/       # Integrações (Supabase)
+└── hooks/              # React hooks customizados
+
+supabase/
+├── functions/          # Edge Functions
+│   ├── vertex-gemini-test/    # Teste Vertex AI
+│   ├── dental-analysis-v2/    # Análise dental
+│   └── ...
+└── config.toml         # Configuração Supabase
+```
+
+## 🚀 Deploy
+
+As Edge Functions são deployadas automaticamente. Para desenvolvimento local:
+
+```bash
+# Instalar dependências
+npm install
+
+# Desenvolvimento local
+npm run dev
+
+# Build para produção
+npm run build
+```
+
+## 📖 Documentação API
+
+### Vertex AI Edge Function
+
+**Endpoint**: `/vertex-gemini-test`
+
+**Request**:
+```json
+{
+  "prompt": "Seu prompt aqui"
+}
+```
+
+**Response Success**:
+```json
+{
+  "ok": true,
+  "data": {
+    "candidates": [{
+      "content": {
+        "parts": [{"text": "Resposta do modelo"}]
+      }
+    }]
+  }
+}
+```
+
+**Response Error**:
+```json
+{
+  "ok": false,
+  "error": "Mensagem de erro"
+}
+```
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.

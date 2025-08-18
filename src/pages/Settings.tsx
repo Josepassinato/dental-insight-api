@@ -33,6 +33,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
+import { vertexGenerate } from "@/lib/vertexClient";
 
 interface TenantSettings {
   ai_preferences: {
@@ -87,6 +88,8 @@ const Settings = () => {
   const [connectionDetails, setConnectionDetails] = useState<any>(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
+  const [vertexTesting, setVertexTesting] = useState(false);
+  const [vertexResponse, setVertexResponse] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -588,6 +591,23 @@ const Settings = () => {
       setConnectionStatus('disconnected');
     } finally {
       setSavingCredentials(false);
+    }
+  };
+
+  const testVertexAI = async () => {
+    setVertexTesting(true);
+    setVertexResponse(null);
+    
+    try {
+      console.log("Settings: Testando Vertex AI...");
+      const response = await vertexGenerate("Olá, este é um teste da integração Vertex AI!");
+      setVertexResponse(response);
+      toast.success("Teste do Vertex AI realizado com sucesso!");
+    } catch (error) {
+      console.error("Settings: Erro no teste Vertex AI:", error);
+      toast.error(`Erro no teste: ${error.message}`);
+    } finally {
+      setVertexTesting(false);
     }
   };
 
@@ -1202,6 +1222,54 @@ const Settings = () => {
                       {connectionDetails.message && (
                         <p className="text-sm text-red-700 mt-2">{connectionDetails.message}</p>
                       )}
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Vertex AI Test */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium">Teste Vertex AI (Gemini)</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Teste a integração com o Google Cloud Vertex AI usando o modelo Gemini
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Zap className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <p className="font-medium">Teste Vertex AI</p>
+                        <p className="text-sm text-muted-foreground">Verificar conexão com modelo Gemini</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={testVertexAI}
+                      disabled={vertexTesting}
+                    >
+                      {vertexTesting ? "Testando..." : "Testar Vertex AI"}
+                    </Button>
+                  </div>
+
+                  {/* Vertex Response */}
+                  {vertexResponse && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-medium text-green-900 mb-2">✅ Resposta do Vertex AI</h4>
+                      {vertexResponse.candidates?.[0]?.content?.parts?.[0]?.text && (
+                        <div className="text-sm text-green-800 bg-white p-3 rounded border">
+                          <p className="font-medium mb-1">Resposta do Gemini:</p>
+                          <p>{vertexResponse.candidates[0].content.parts[0].text}</p>
+                        </div>
+                      )}
+                      <details className="mt-3">
+                        <summary className="text-sm font-medium text-green-700 cursor-pointer">Ver resposta completa</summary>
+                        <pre className="text-xs bg-white p-3 rounded border mt-2 overflow-auto max-h-60">
+                          {JSON.stringify(vertexResponse, null, 2)}
+                        </pre>
+                      </details>
                     </div>
                   )}
                 </div>

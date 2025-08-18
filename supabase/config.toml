@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-report]
 verify_jwt = false
+
+[functions.vertex-gemini-test]
+verify_jwt = false
