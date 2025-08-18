@@ -41,9 +41,16 @@ async function generateJWT(credentials: GoogleCredentials): Promise<string> {
 
   // Import the private key
   const privateKey = credentials.private_key.replace(/\\n/g, '\n');
+  
+  // Convert PEM to DER format
+  const pemData = privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s/g, '');
+  
   const keyData = await crypto.subtle.importKey(
     "pkcs8",
-    new TextEncoder().encode(privateKey),
+    Uint8Array.from(atob(pemData), c => c.charCodeAt(0)),
     {
       name: "RSASSA-PKCS1-v1_5",
       hash: "SHA-256",
