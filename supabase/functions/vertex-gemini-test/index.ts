@@ -53,7 +53,7 @@ async function generateJWT(credentials: GoogleCredentials): Promise<string> {
     Uint8Array.from(atob(pemData), c => c.charCodeAt(0)),
     {
       name: "RSASSA-PKCS1-v1_5",
-      hash: "SHA-256",
+      hash: { name: "SHA-256" },
     },
     false,
     ["sign"]
@@ -145,7 +145,15 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt = "Hello, this is a test message for Vertex AI Gemini!" } = await req.json();
+    let prompt = "Hello, this is a test message for Vertex AI Gemini!";
+    try {
+      const body = await req.json();
+      if (body && typeof body.prompt === 'string') {
+        prompt = body.prompt;
+      }
+    } catch (_) {
+      // no body provided
+    }
 
     // Robust credentials parsing: supports JSON and base64-encoded JSON
     const rawCreds = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')?.trim();
@@ -211,7 +219,7 @@ serve(async (req) => {
       ok: false,
       error: (error as Error).message
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
