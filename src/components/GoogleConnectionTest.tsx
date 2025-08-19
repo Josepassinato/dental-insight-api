@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,11 @@ export const GoogleConnectionTest = () => {
     vertex: 'loading'
   });
   const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    testConnections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const testConnections = async () => {
     setTesting(true);
