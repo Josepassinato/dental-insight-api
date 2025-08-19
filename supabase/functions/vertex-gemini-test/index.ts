@@ -158,6 +158,8 @@ serve(async (req) => {
     // Robust credentials parsing: supports JSON and base64-encoded JSON
     const rawCreds = Deno.env.get('dental-ia')?.trim();
     let projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID')?.trim() || '';
+    
+    console.log('Project ID from env:', projectId);
 
     if (!rawCreds) {
       throw new Error('dental-ia secret not found in environment');
@@ -193,10 +195,13 @@ serve(async (req) => {
     // Fallback to project_id from credentials when secret not set
     if (!projectId) {
       projectId = credentials.project_id;
+      console.log('Using project ID from credentials:', projectId);
     }
     if (!projectId) {
       throw new Error('GOOGLE_CLOUD_PROJECT_ID not found (neither secret nor inside credentials.project_id).');
     }
+    
+    console.log('Final project ID to use:', projectId);
 
     console.log('Getting access token...');
     const accessToken = await getAccessToken(credentials);
