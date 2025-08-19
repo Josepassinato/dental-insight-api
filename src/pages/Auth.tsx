@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, LogIn, UserPlus, Building2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cleanupAuthState, forceAuthRefresh } from "@/utils/authCleanup";
+import { GoogleConnectionTest } from "@/components/GoogleConnectionTest";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -302,6 +303,11 @@ const Auth = () => {
                 </>
               )}
             </Button>
+          </div>
+          
+          {/* Google Connection Test */}
+          <div className="mt-6 pt-4 border-t">
+            <GoogleConnectionTest />
           </div>
         </CardContent>
       </Card>
