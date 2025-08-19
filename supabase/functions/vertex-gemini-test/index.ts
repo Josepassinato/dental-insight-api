@@ -147,20 +147,48 @@ serve(async (req) => {
   try {
     const { prompt = "Hello, this is a test message for Vertex AI Gemini!" } = await req.json();
 
-    // Get credentials from environment
-    const credentialsJson = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
-    const projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID');
+    // Robust credentials parsing: supports JSON and base64-encoded JSON
+    const rawCreds = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')?.trim();
+    let projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID')?.trim() || '';
 
-    if (!credentialsJson) {
+    if (!rawCreds) {
       throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY not found in environment');
     }
 
-    if (!projectId) {
-      throw new Error('GOOGLE_CLOUD_PROJECT_ID not found in environment');
+    console.log('Parsing credentials...');
+    let credentials: GoogleCredentials | null = null;
+
+    // Try JSON parse directly, then try base64-decode
+    try {
+      credentials = JSON.parse(rawCreds);
+    } catch (_) {
+      try {
+        const decoded = atob(rawCreds);
+        credentials = JSON.parse(decoded);
+      } catch (_) {
+        if (rawCreds.includes('-----BEGIN PRIVATE KEY-----')) {
+          throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY must be the FULL service account JSON, not only the private_key PEM. Paste the entire JSON from Google Cloud.');
+        }
+        throw new Error('Invalid GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY format. Provide JSON or base64-encoded JSON of the service account.');
+      }
     }
 
-    console.log('Parsing credentials...');
-    const credentials: GoogleCredentials = JSON.parse(credentialsJson);
+    if (!credentials || !credentials.client_email || !credentials.private_key) {
+      throw new Error('Missing required fields in Google credentials (client_email/private_key).');
+    }
+
+    // Normalize private key newlines
+    if (credentials.private_key.includes('\\n')) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+
+    // Fallback to project_id from credentials when secret not set
+    if (!projectId) {
+      projectId = credentials.project_id;
+    }
+    if (!projectId) {
+      throw new Error('GOOGLE_CLOUD_PROJECT_ID not found (neither secret nor inside credentials.project_id).');
+    }
 
     console.log('Getting access token...');
     const accessToken = await getAccessToken(credentials);
@@ -181,7 +209,7 @@ serve(async (req) => {
     console.error('Error in vertex-gemini-test function:', error);
     return new Response(JSON.stringify({
       ok: false,
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
