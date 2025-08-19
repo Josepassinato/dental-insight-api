@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { vertexGenerate } from "@/lib/vertexClient";
+import { testVisionAPI } from "@/utils/testVisionAPI";
 import { toast } from "sonner";
 
 interface ConnectionStatus {
@@ -32,19 +33,15 @@ export const GoogleConnectionTest = () => {
     setTesting(true);
     setStatus({ auth: 'loading', vertex: 'loading' });
 
-    // Test Google Auth
+    // Test Cloud Vision API
     try {
-      const { data, error } = await supabase.functions.invoke('google-auth-test', {
-        body: { action: 'test' }
-      });
-
-      if (error) throw error;
-
+      const visionTest = await testVisionAPI();
+      
       setStatus(prev => ({
         ...prev,
-        auth: data.success ? 'success' : 'error',
-        authDetails: data,
-        authError: data.success ? undefined : data.message
+        auth: visionTest.success ? 'success' : 'error',
+        authDetails: visionTest.success ? { message: visionTest.message } : null,
+        authError: visionTest.success ? undefined : visionTest.message
       }));
     } catch (error: any) {
       setStatus(prev => ({
@@ -123,15 +120,14 @@ export const GoogleConnectionTest = () => {
           <div className="flex items-center justify-between p-3 border rounded">
             <div className="flex items-center gap-2">
               {getStatusIcon(status.auth)}
-              <span>Google Cloud Auth</span>
+              <span>Cloud Vision API</span>
             </div>
             {getStatusBadge(status.auth)}
           </div>
 
           {status.authDetails && (
             <div className="text-sm text-muted-foreground pl-6">
-              Project ID: {status.authDetails.project_id}<br />
-              Client: {status.authDetails.client_email}
+              {status.authDetails.message}
             </div>
           )}
 
