@@ -44,11 +44,11 @@ serve(async (req) => {
         if (body.testCredentials) {
           credentials = JSON.parse(body.testCredentials);
         } else {
-          const credentialsJson = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
+          const credentialsJson = Deno.env.get('dental-ia');
           if (!credentialsJson) {
             return new Response(JSON.stringify({
               success: false,
-              message: "GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY não configurado",
+              message: "dental-ia secret não configurado",
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -211,14 +211,77 @@ serve(async (req) => {
             }
             const base64Content = btoa(binary);
 
-            const apiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY');
-            if (!apiKey) {
-              throw new Error('GOOGLE_CLOUD_API_KEY não configurada');
+            // Get credentials from dental-ia secret and generate access token
+            const credentialsJson = Deno.env.get('dental-ia');
+            if (!credentialsJson) {
+              throw new Error('dental-ia secret não configurado');
+            }
+            
+            const credentials = JSON.parse(credentialsJson);
+            
+            // Generate JWT and get access token for Vision API
+            const now = Math.floor(Date.now() / 1000);
+            const payload = {
+              iss: credentials.client_email,
+              scope: "https://www.googleapis.com/auth/cloud-platform",
+              aud: "https://oauth2.googleapis.com/token",
+              exp: now + 3600,
+              iat: now
+            };
+
+            const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+            const payloadStr = btoa(JSON.stringify(payload));
+            const unsignedToken = `${header}.${payloadStr}`;
+
+            // Import private key and sign JWT
+            const privateKey = credentials.private_key.replace(/\\n/g, '\n');
+            const pemData = privateKey
+              .replace(/-----BEGIN PRIVATE KEY-----/, '')
+              .replace(/-----END PRIVATE KEY-----/, '')
+              .replace(/\s/g, '');
+            
+            const keyData = await crypto.subtle.importKey(
+              "pkcs8",
+              Uint8Array.from(atob(pemData), c => c.charCodeAt(0)),
+              { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } },
+              false,
+              ["sign"]
+            );
+
+            const signature = await crypto.subtle.sign(
+              "RSASSA-PKCS1-v1_5",
+              keyData,
+              new TextEncoder().encode(unsignedToken)
+            );
+
+            const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+              .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            
+            const jwt = `${unsignedToken}.${encodedSignature}`;
+
+            // Get access token
+            const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({
+                grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                assertion: jwt,
+              }),
+            });
+
+            const tokenData = await tokenResponse.json();
+            if (!tokenResponse.ok) {
+              throw new Error(`Token error: ${tokenData.error_description || tokenData.error}`);
             }
 
-            const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+            const accessToken = tokenData.access_token;
+
+            const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+              },
               body: JSON.stringify({
                 requests: [{
                   image: { content: base64Content },
