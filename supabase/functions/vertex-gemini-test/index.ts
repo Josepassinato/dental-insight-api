@@ -156,11 +156,11 @@ serve(async (req) => {
     }
 
     // Robust credentials parsing: supports JSON and base64-encoded JSON
-    const rawCreds = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY')?.trim();
+    const rawCreds = Deno.env.get('dental-ia')?.trim();
     let projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID')?.trim() || '';
 
     if (!rawCreds) {
-      throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY not found in environment');
+      throw new Error('dental-ia secret not found in environment');
     }
 
     console.log('Parsing credentials...');
@@ -175,9 +175,9 @@ serve(async (req) => {
         credentials = JSON.parse(decoded);
       } catch (_) {
         if (rawCreds.includes('-----BEGIN PRIVATE KEY-----')) {
-          throw new Error('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY must be the FULL service account JSON, not only the private_key PEM. Paste the entire JSON from Google Cloud.');
+          throw new Error('dental-ia must be the FULL service account JSON, not only the private_key PEM. Paste the entire JSON from Google Cloud.');
         }
-        throw new Error('Invalid GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY format. Provide JSON or base64-encoded JSON of the service account.');
+        throw new Error('Invalid dental-ia format. Provide JSON or base64-encoded JSON of the service account.');
       }
     }
 

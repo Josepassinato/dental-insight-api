@@ -37,12 +37,12 @@ serve(async (req) => {
       credentials = JSON.parse(googleCredentials);
     } else {
       console.log("Using credentials from secrets");
-      const credentialsJson = Deno.env.get('GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY');
+      const credentialsJson = Deno.env.get('dental-ia');
       
       if (!credentialsJson) {
         return new Response(JSON.stringify({
           success: false,
-          message: "GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY secret não configurado",
+          message: "dental-ia secret não configurado",
           status: "disconnected"
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
