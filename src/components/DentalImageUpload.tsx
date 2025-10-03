@@ -140,23 +140,16 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
       formData.append('tenantId', profile.tenant_id);
 
       // Upload files
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `https://blwnzwkkykaobmclsvxg.supabase.co/functions/v1/dental-analysis-v2`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: formData,
-        }
-      );
+      const { data: result, error: fnError } = await supabase.functions.invoke('dental-analysis-v2', {
+        body: formData,
+      });
 
-      const result = await response.json();
+      if (fnError) {
+        throw new Error(fnError.message || 'Erro no upload');
+      }
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || result.message || 'Erro no upload');
+      if (!result?.success) {
+        throw new Error(result?.error || result?.message || 'Erro no upload');
       }
 
       setUploadProgress(100);
