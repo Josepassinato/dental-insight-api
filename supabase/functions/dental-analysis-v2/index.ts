@@ -299,6 +299,8 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
               }),
             });
 
+            console.log('Vertex AI response status:', aiResponse.status);
+            
             if (!aiResponse.ok) {
               const errorText = await aiResponse.text();
               console.error('Lovable AI error:', aiResponse.status, errorText);
@@ -355,11 +357,16 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
             console.log('Analysis saved successfully');
           } catch (analysisError) {
             console.error('Analysis error:', analysisError);
+            console.error('Full error details:', JSON.stringify(analysisError, null, 2));
             await supabase
               .from('dental_images')
               .update({ 
                 processing_status: 'failed',
-                ai_analysis: { error: analysisError.message }
+                ai_analysis: { 
+                  error: analysisError.message,
+                  stack: analysisError.stack,
+                  timestamp: new Date().toISOString()
+                }
               })
               .eq('id', imageData.id);
           }
