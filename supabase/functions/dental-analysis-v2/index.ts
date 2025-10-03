@@ -183,7 +183,7 @@ serve(async (req) => {
             continue;
           }
 
-          // Analyze with Google Vision API
+          // Analyze with Vertex AI via Lovable AI Gateway
           let analysisConfidence: number | null = null;
           let aiAnalysis: any = null;
 
@@ -211,96 +211,93 @@ serve(async (req) => {
             }
             const base64Content = btoa(binary);
 
-            // Get credentials from dental-ia secret and generate access token
-            const credentialsJson = Deno.env.get('dental-ia');
-            if (!credentialsJson) {
-              throw new Error('dental-ia secret não configurado');
+            // Use Lovable AI Gateway with Gemini 2.5 Flash for vision analysis
+            const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+            if (!lovableApiKey) {
+              throw new Error('LOVABLE_API_KEY não configurado');
             }
-            
-            const credentials = JSON.parse(credentialsJson);
-            
-            // Generate JWT and get access token for Vision API
-            const now = Math.floor(Date.now() / 1000);
-            const payload = {
-              iss: credentials.client_email,
-              scope: "https://www.googleapis.com/auth/cloud-platform",
-              aud: "https://oauth2.googleapis.com/token",
-              exp: now + 3600,
-              iat: now
-            };
 
-            const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-            const payloadStr = btoa(JSON.stringify(payload));
-            const unsignedToken = `${header}.${payloadStr}`;
+            console.log('Analyzing with Vertex AI (Gemini 2.5 Flash)...');
 
-            // Import private key and sign JWT
-            const privateKey = credentials.private_key.replace(/\\n/g, '\n');
-            const pemData = privateKey
-              .replace(/-----BEGIN PRIVATE KEY-----/, '')
-              .replace(/-----END PRIVATE KEY-----/, '')
-              .replace(/\s/g, '');
-            
-            const keyData = await crypto.subtle.importKey(
-              "pkcs8",
-              Uint8Array.from(atob(pemData), c => c.charCodeAt(0)),
-              { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } },
-              false,
-              ["sign"]
-            );
+            const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${lovableApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'google/gemini-2.5-flash',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'Você é um assistente especializado em análise de imagens dentais. Analise a imagem fornecida e identifique características relevantes, condições dentárias, e forneça insights profissionais.'
+                  },
+                  {
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Analise esta imagem dental do tipo "${examType}" e forneça:
+1. Descrição geral da imagem
+2. Condições dentárias identificadas
+3. Áreas de atenção ou preocupação
+4. Qualidade da imagem
+5. Nível de confiança da análise (0-100)
 
-            const signature = await crypto.subtle.sign(
-              "RSASSA-PKCS1-v1_5",
-              keyData,
-              new TextEncoder().encode(unsignedToken)
-            );
-
-            const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-              .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-            
-            const jwt = `${unsignedToken}.${encodedSignature}`;
-
-            // Get access token
-            const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: new URLSearchParams({
-                grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                assertion: jwt,
+Responda em formato JSON com as chaves: description, conditions, concerns, image_quality, confidence`
+                      },
+                      {
+                        type: 'image_url',
+                        image_url: {
+                          url: `data:${file.type};base64,${base64Content}`
+                        }
+                      }
+                    ]
+                  }
+                ],
               }),
             });
 
-            const tokenData = await tokenResponse.json();
-            if (!tokenResponse.ok) {
-              throw new Error(`Token error: ${tokenData.error_description || tokenData.error}`);
+            if (!aiResponse.ok) {
+              const errorText = await aiResponse.text();
+              console.error('Lovable AI error:', aiResponse.status, errorText);
+              throw new Error(`Vertex AI request failed: ${aiResponse.status} - ${errorText}`);
             }
 
-            const accessToken = tokenData.access_token;
+            const aiResponseData = await aiResponse.json();
+            console.log('Vertex AI response received');
 
-            const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate`, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-              },
-              body: JSON.stringify({
-                requests: [{
-                  image: { content: base64Content },
-                  features: [
-                    { type: 'LABEL_DETECTION', maxResults: 10 }
-                  ]
-                }]
-              })
-            });
-
-            const visionJson = await visionResponse.json();
-            if (!visionResponse.ok) {
-              console.error('Vision API error:', visionJson);
-              throw new Error(visionJson.error?.message || 'Vision API request failed');
+            const aiContent = aiResponseData.choices?.[0]?.message?.content;
+            if (!aiContent) {
+              throw new Error('Resposta vazia do Vertex AI');
             }
 
-            aiAnalysis = visionJson.responses?.[0] || {};
-            const topScore = aiAnalysis?.labelAnnotations?.[0]?.score;
-            analysisConfidence = typeof topScore === 'number' ? Math.round(topScore * 100) : null;
+            // Parse JSON response from AI
+            let parsedAnalysis;
+            try {
+              // Try to extract JSON from markdown code blocks if present
+              const jsonMatch = aiContent.match(/```json\s*([\s\S]*?)\s*```/) || 
+                               aiContent.match(/```\s*([\s\S]*?)\s*```/);
+              const jsonContent = jsonMatch ? jsonMatch[1] : aiContent;
+              parsedAnalysis = JSON.parse(jsonContent);
+            } catch (parseError) {
+              console.warn('Could not parse AI response as JSON, using raw content');
+              parsedAnalysis = {
+                description: aiContent,
+                conditions: [],
+                concerns: [],
+                image_quality: 'unknown',
+                confidence: 75
+              };
+            }
+
+            aiAnalysis = {
+              model: 'google/gemini-2.5-flash',
+              analysis: parsedAnalysis,
+              raw_response: aiContent
+            };
+
+            analysisConfidence = parsedAnalysis.confidence || 75;
 
             // Save analysis
             await supabase
@@ -311,11 +308,16 @@ serve(async (req) => {
                 analysis_confidence: analysisConfidence
               })
               .eq('id', imageData.id);
+
+            console.log('Analysis saved successfully');
           } catch (analysisError) {
             console.error('Analysis error:', analysisError);
             await supabase
               .from('dental_images')
-              .update({ processing_status: 'failed' })
+              .update({ 
+                processing_status: 'failed',
+                ai_analysis: { error: analysisError.message }
+              })
               .eq('id', imageData.id);
           }
 
