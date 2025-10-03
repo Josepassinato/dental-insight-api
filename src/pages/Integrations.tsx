@@ -284,8 +284,9 @@ const Integrations = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="webhooks" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+            <TabsTrigger value="dental-systems">Sistemas Odontológicos</TabsTrigger>
             <TabsTrigger value="api-docs">API Docs</TabsTrigger>
             <TabsTrigger value="sdk">SDK</TabsTrigger>
           </TabsList>
@@ -447,6 +448,144 @@ const Integrations = () => {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Dental Systems Integration */}
+          <TabsContent value="dental-systems" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Sistemas Odontológicos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-sm text-muted-foreground">
+                  Configure integrações com sistemas de gestão odontológica para sincronização automática de dados de pacientes e histórico médico.
+                </p>
+
+                {/* Brazil Systems */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">🇧🇷 Sistemas Brasileiros</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Dentalis</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Sistema de gestão odontológica com prontuário eletrônico
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Odontocloud</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Gestão de clínicas e consultórios odontológicos
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Dental Office</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Software de gestão para consultórios dentários
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">iDent</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Gestão integrada de clínicas odontológicas
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* US Systems */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">🇺🇸 Sistemas Americanos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Dentrix</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Software de gestão líder nos EUA
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Eaglesoft</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Gerenciamento de práticas odontológicas
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Open Dental</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Software open-source de gestão dental
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Curve Dental</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Plataforma cloud de gestão odontológica
+                        </p>
+                        <Badge variant="secondary">Em breve</Badge>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="bg-muted p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">💡 Integração Personalizada</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Precisa integrar com um sistema específico? Nossa API permite conexões customizadas com qualquer sistema de gestão odontológica.
+                  </p>
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ver Documentação da API
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

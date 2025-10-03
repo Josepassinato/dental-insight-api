@@ -109,6 +109,36 @@ serve(async (req) => {
 
       console.log(`Processing ${files.length} files for patient ${patientId}`);
 
+      // Fetch patient data for context
+      let patientContext = '';
+      try {
+        const { data: patientData, error: patientError } = await supabase
+          .from('patients')
+          .select('age, birth_date, gender, allergies, current_medications, medical_conditions, notes')
+          .eq('id', patientId)
+          .single();
+
+        if (!patientError && patientData) {
+          const age = patientData.age || (patientData.birth_date ? 
+            new Date().getFullYear() - new Date(patientData.birth_date).getFullYear() : null);
+          
+          patientContext = `
+CONTEXTO DO PACIENTE:
+- Idade: ${age || 'Não informada'}
+- Gênero: ${patientData.gender || 'Não informado'}
+- Alergias: ${patientData.allergies || 'Nenhuma registrada'}
+- Medicações em uso: ${patientData.current_medications || 'Nenhuma registrada'}
+- Condições médicas: ${patientData.medical_conditions || 'Nenhuma registrada'}
+${patientData.notes ? `- Observações: ${patientData.notes}` : ''}
+
+IMPORTANTE: Considere estes dados do paciente ao realizar a análise. A idade pode influenciar a interpretação de achados. Alergias e medicações podem afetar planos de tratamento.`;
+          
+          console.log('Patient context loaded for AI analysis');
+        }
+      } catch (error) {
+        console.warn('Could not load patient context:', error);
+      }
+
       try {
         // Create exam record
         const { data: examData, error: examError } = await supabase
@@ -254,6 +284,7 @@ Seja EXTREMAMENTE detalhado e técnico nas suas observações. Use terminologia 
                       {
                         type: 'text',
                         text: `Analise esta imagem dental do tipo "${examType}" realizando uma avaliação odontológica completa e detalhada.
+${patientContext}
 
 INSTRUÇÕES IMPORTANTES:
 1. Examine TODA a imagem com atenção aos mínimos detalhes

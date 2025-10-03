@@ -27,11 +27,13 @@ import {
 import { toast } from "sonner";
 import { PatientForm } from "@/components/PatientForm";
 import { PatientHistory } from "@/components/PatientHistory";
+import { PatientDocuments } from "@/components/PatientDocuments";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Patient {
   id: string;
+  tenant_id: string;
   patient_ref: string;
   age?: number;
   gender?: string;
@@ -336,17 +338,27 @@ const Patients = () => {
 
       {/* Patient History Dialog */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Histórico do Paciente - {selectedPatient?.patient_ref}
+              Histórico e Documentos - {selectedPatient?.patient_ref}
             </DialogTitle>
           </DialogHeader>
           {selectedPatient && (
-            <PatientHistory
-              patient={selectedPatient}
-              onClose={() => setShowHistory(false)}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <PatientHistory
+                  patient={selectedPatient}
+                  onClose={() => setShowHistory(false)}
+                />
+              </div>
+              <div>
+                <PatientDocuments
+                  patientId={selectedPatient.id}
+                  tenantId={selectedPatient.tenant_id}
+                />
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
