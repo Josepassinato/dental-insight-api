@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, Eye, Check, X, AlertCircle } from "lucide-react";
 import { BrandingPreview } from "@/components/BrandingPreview";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 
 interface BrandingSettings {
   clinic_name?: string;
@@ -36,6 +37,7 @@ interface BrandingSettings {
 
 export default function WhiteLabelSettings() {
   const { toast } = useToast();
+  const { branding: contextBranding, tenantId: contextTenantId, refreshBranding } = useTenantBranding();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,6 +57,15 @@ export default function WhiteLabelSettings() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    if (contextBranding) {
+      setBranding(contextBranding as BrandingSettings);
+    }
+    if (contextTenantId) {
+      setTenantId(contextTenantId);
+    }
+  }, [contextBranding, contextTenantId]);
 
   const loadSettings = async () => {
     try {
@@ -99,6 +110,9 @@ export default function WhiteLabelSettings() {
         .eq("tenant_id", tenantId);
 
       if (error) throw error;
+
+      // Refresh the branding context to apply changes immediately
+      await refreshBranding();
 
       toast({
         title: "Configurações salvas",
