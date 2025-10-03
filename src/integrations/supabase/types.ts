@@ -983,7 +983,13 @@ export type Database = {
         | "cephalometric"
         | "cbct"
       plan_type: "basic" | "professional" | "enterprise"
-      user_role: "admin" | "dentist" | "assistant" | "viewer" | "owner"
+      user_role:
+        | "admin"
+        | "dentist"
+        | "assistant"
+        | "viewer"
+        | "owner"
+        | "system_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1120,7 +1126,14 @@ export const Constants = {
         "cbct",
       ],
       plan_type: ["basic", "professional", "enterprise"],
-      user_role: ["admin", "dentist", "assistant", "viewer", "owner"],
+      user_role: [
+        "admin",
+        "dentist",
+        "assistant",
+        "viewer",
+        "owner",
+        "system_admin",
+      ],
     },
   },
 } as const
