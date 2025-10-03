@@ -89,19 +89,28 @@ export const TenantBrandingProvider = ({ children }: { children: ReactNode }) =>
   const loadBranding = async () => {
     setIsLoading(true);
     try {
+      console.log('🎨 [White Label] Iniciando carregamento do branding...');
+      console.log('🌐 [White Label] Hostname:', window.location.hostname);
+      
       // First try to resolve tenant by domain
       const domainTenantId = await resolveTenantByDomain(window.location.hostname);
+      console.log('🔍 [White Label] Tenant ID resolvido por domínio:', domainTenantId);
       
       if (domainTenantId) {
         setTenantId(domainTenantId);
         const brandingSettings = await loadTenantBranding(domainTenantId);
+        console.log('🎨 [White Label] Branding carregado (domínio):', brandingSettings);
         if (brandingSettings) {
           setBranding(brandingSettings);
           applyTheme(brandingSettings);
+          console.log('✅ [White Label] Tema aplicado com sucesso (domínio)');
         }
       } else {
         // Fall back to authenticated user's tenant
+        console.log('👤 [White Label] Tentando carregar por usuário autenticado...');
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('👤 [White Label] Usuário:', user?.id);
+        
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
@@ -109,20 +118,25 @@ export const TenantBrandingProvider = ({ children }: { children: ReactNode }) =>
             .eq('id', user.id)
             .maybeSingle();
 
+          console.log('🏢 [White Label] Profile tenant_id:', profile?.tenant_id);
+
           if (profile?.tenant_id) {
             setTenantId(profile.tenant_id);
             const brandingSettings = await loadTenantBranding(profile.tenant_id);
+            console.log('🎨 [White Label] Branding carregado (user):', brandingSettings);
             if (brandingSettings) {
               setBranding(brandingSettings);
               applyTheme(brandingSettings);
+              console.log('✅ [White Label] Tema aplicado com sucesso (user)');
             }
           }
         }
       }
     } catch (error) {
-      console.error('Error loading branding:', error);
+      console.error('❌ [White Label] Erro ao carregar branding:', error);
     } finally {
       setIsLoading(false);
+      console.log('🏁 [White Label] Carregamento finalizado');
     }
   };
 
