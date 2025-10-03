@@ -347,34 +347,97 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
             // Map AI conditions into our standardized findings structure used by the UI
             const normalizeFindingType = (name: string): string => {
               const n = (name || '').toLowerCase();
-              if (n.includes('cárie') || n.includes('carie') || n.includes('cari')) return 'carie';
+              
+              // Cáries
+              if (n.includes('cárie') || n.includes('carie') || n.includes('cavity')) return 'carie';
+              
+              // Periapical
+              if (n.includes('lesão periapical') || n.includes('lesao periapical')) return 'periapical';
+              if (n.includes('granuloma')) return 'granuloma_periapical';
+              if (n.includes('cisto')) return 'cisto_radicular';
+              if (n.includes('abscesso')) return 'abscesso_agudo';
+              if (n.includes('necrose')) return 'necrose_pulpar';
               if (n.includes('periapical')) return 'periapical';
+              
+              // Periodontal
               if (n.includes('periodont')) return 'periodontite';
               if (n.includes('gengivite')) return 'gengivite';
-              if (n.includes('perda óssea') || n.includes('perda ossea') || n.includes('reabsor')) return 'perda_ossea';
+              if (n.includes('perda óssea') || n.includes('perda ossea') || n.includes('bone loss')) return 'perda_ossea';
+              if (n.includes('reabsor')) return 'reabsorcao_radicular';
+              if (n.includes('cálculo') || n.includes('calculo') || n.includes('tártaro') || n.includes('tartaro') || n.includes('calculus')) return 'calculo';
+              
+              // Inclusões e Erupção
+              if (n.includes('inclusão') || n.includes('inclusao') || n.includes('impactação') || n.includes('impactacao')) return 'tooth_impaction';
+              if (n.includes('não erupcionado') || n.includes('nao erupcionado') || n.includes('impacted')) return 'tooth_impaction';
+              if (n.includes('erupção') || n.includes('erupcao') || n.includes('eruption')) return 'eruption_problem';
+              
+              // Ortodôntico
+              if (n.includes('má oclusão') || n.includes('ma oclusao') || n.includes('malocclusion')) return 'malocclusion';
+              if (n.includes('apinhamento') || n.includes('crowding')) return 'crowding';
+              if (n.includes('espaçamento') || n.includes('espacamento') || n.includes('spacing')) return 'spacing';
+              if (n.includes('ortodont')) return 'orthodontic';
+              
+              // Fraturas
+              if (n.includes('fratura') || n.includes('fracture')) return 'fracture';
+              
+              // Outros
               if (n.includes('restaura')) return 'restauracao_defeituosa';
-              if (n.includes('cálculo') || n.includes('calculo') || n.includes('tártaro') || n.includes('tartaro')) return 'calculo';
-              if (n.includes('impact') || n.includes('inclus')) return 'impactacao';
-              if (n.includes('fratura')) return 'fratura';
+              
               return 'achado';
             };
 
             const toSeverity = (sev: string | undefined): 'leve' | 'moderada' | 'severa' => {
               const s = (sev || '').toLowerCase();
-              if (s.startsWith('sev')) return 'severa';
-              if (s.startsWith('mod')) return 'moderada';
+              if (s.includes('sever') || s.includes('grave') || s.includes('alto') || s.includes('crítico') || s.includes('critico') || s.includes('severe')) return 'severa';
+              if (s.includes('moder') || s.includes('médio') || s.includes('medio') || s.includes('moderate')) return 'moderada';
+              if (s.includes('leve') || s.includes('baixo') || s.includes('light') || s.includes('mild') || s.includes('inicial')) return 'leve';
               return 'leve';
             };
 
             const conds = Array.isArray(parsedAnalysis.conditions) ? parsedAnalysis.conditions : [];
-            const mappedFindings = conds.map((c: any, idx: number) => ({
-              id: (globalThis.crypto?.randomUUID?.() || `${imageData.id}-${idx}`),
-              tooth_number: typeof c.location === 'string' ? c.location.match(/\b\d{1,2}\b/)?.[0] : undefined,
-              finding_type: normalizeFindingType(c.name || ''),
-              severity: toSeverity(c.severity),
-              confidence: analysisConfidence ?? 0.75,
-              description: c.details || c.name || 'Achado detectado',
-            }));
+            const concerns = Array.isArray(parsedAnalysis.concerns) ? parsedAnalysis.concerns : [];
+            
+            // Log para debug - ver o que a IA está retornando
+            console.log('🔍 AI Analysis Data:', JSON.stringify({
+              conditions_count: conds.length,
+              concerns_count: concerns.length,
+              sample_condition: conds[0],
+              sample_concern: concerns[0]
+            }, null, 2));
+
+            const mappedFindings = conds.map((c: any, idx: number) => {
+              // Extrair número do dente da localização com múltiplos padrões
+              const toothMatch = typeof c.location === 'string' ? 
+                c.location.match(/\b(\d{1,2})\b/) || 
+                c.location.match(/dente\s+(\d{1,2})/i) ||
+                c.location.match(/elemento\s+(\d{1,2})/i) : null;
+              
+              // Buscar recomendação correspondente nos concerns
+              const relatedConcern = concerns.find((concern: any) => 
+                concern.finding && c.name && 
+                concern.finding.toLowerCase().includes(c.name.toLowerCase().substring(0, 10))
+              );
+
+              return {
+                id: globalThis.crypto?.randomUUID?.() || `${imageData.id}-${idx}`,
+                tooth_number: toothMatch?.[1],
+                precise_location: c.location,
+                finding_type: normalizeFindingType(c.name || ''),
+                severity: toSeverity(c.severity),
+                clinical_severity: c.severity || toSeverity(c.severity),
+                confidence: analysisConfidence ?? 0.75,
+                description: c.details || c.name || 'Achado detectado',
+                clinical_recommendations: relatedConcern?.recommendation ? 
+                  [relatedConcern.recommendation] : undefined
+              };
+            });
+
+            console.log('📊 Mapped Findings Summary:', {
+              total: mappedFindings.length,
+              with_tooth_number: mappedFindings.filter(f => f.tooth_number).length,
+              with_recommendations: mappedFindings.filter(f => f.clinical_recommendations).length,
+              types: [...new Set(mappedFindings.map(f => f.finding_type))]
+            });
 
             // Save analysis + mapped findings
             await supabase
