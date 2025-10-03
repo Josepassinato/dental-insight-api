@@ -616,7 +616,6 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
-          is_system_admin: boolean
           role: string
           tenant_id: string | null
           updated_at: string | null
@@ -626,7 +625,6 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
-          is_system_admin?: boolean
           role?: string
           tenant_id?: string | null
           updated_at?: string | null
@@ -636,7 +634,6 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
-          is_system_admin?: boolean
           role?: string
           tenant_id?: string | null
           updated_at?: string | null
@@ -939,6 +936,13 @@ export type Database = {
       get_user_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       is_admin: {
         Args: { user_uuid?: string }

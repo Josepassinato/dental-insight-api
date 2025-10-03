@@ -14,12 +14,13 @@ import { toast } from "sonner";
 interface TeamMember {
   id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'dentist' | 'assistant' | 'viewer';
+  role: 'system_admin' | 'owner' | 'admin' | 'dentist' | 'assistant' | 'viewer';
   created_at: string;
   profiles?: {
+    id: string;
     full_name: string | null;
     email: string;
-  };
+  } | null;
 }
 
 export const TeamManagement = () => {
@@ -49,19 +50,36 @@ export const TeamManagement = () => {
   const loadTeamMembers = async () => {
     try {
       setLoading(true);
+      
+      // Get current user's session
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Get user's tenant_id from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.tenant_id) {
+        toast.error("Tenant não encontrado");
+        return;
+      }
+
+      // Get all user_roles for this tenant
       const { data, error } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at
-        `)
+        .select('id, user_id, role, created_at')
+        .eq('tenant_id', profile.tenant_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Buscar profiles separadamente para evitar erro de join
+      // Buscar profiles separadamente
       const userIds = data?.map(m => m.user_id) || [];
       const { data: profilesData } = await supabase
         .from('profiles')
@@ -127,6 +145,8 @@ export const TeamManagement = () => {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
+      case 'system_admin':
+        return 'destructive';
       case 'owner':
         return 'default';
       case 'admin':
@@ -140,6 +160,7 @@ export const TeamManagement = () => {
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
+      system_admin: 'Admin Sistema',
       owner: 'Proprietário',
       admin: 'Administrador',
       dentist: 'Dentista',
@@ -264,7 +285,7 @@ export const TeamManagement = () => {
                 </TableCell>
                 {isOwner && (
                   <TableCell className="text-right">
-                    {member.role !== 'owner' && (
+                    {member.role !== 'owner' && member.role !== 'system_admin' && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -289,7 +310,8 @@ export const TeamManagement = () => {
         <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
           <h4 className="font-semibold text-sm">Sobre as Funções</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li><strong>Proprietário:</strong> Acesso total, gerencia equipe e planos</li>
+            <li><strong>Admin Sistema:</strong> Acesso administrativo total ao SaaS</li>
+            <li><strong>Proprietário:</strong> Acesso total à clínica, gerencia equipe e planos</li>
             <li><strong>Dentista:</strong> Pode criar e editar pacientes e exames</li>
             <li><strong>Assistente:</strong> Pode visualizar e adicionar dados básicos</li>
             <li><strong>Visualizador:</strong> Apenas visualização de dados</li>
