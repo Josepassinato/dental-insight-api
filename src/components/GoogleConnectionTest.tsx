@@ -53,19 +53,39 @@ export const GoogleConnectionTest = () => {
 
     // Test Vertex AI
     try {
-      const response = await vertexGenerate("Test connection");
+      console.log('🧪 Testando Vertex AI...');
+      const response = await vertexGenerate("Olá, teste de conexão com Vertex AI Gemini!");
+      
+      console.log('✅ Vertex AI respondeu:', response);
+      
       setStatus(prev => ({
         ...prev,
         vertex: 'success',
-        vertexDetails: response
+        vertexDetails: {
+          message: 'Vertex AI conectado e funcionando!',
+          response: response?.candidates?.[0]?.content?.parts?.[0]?.text || 'Resposta recebida'
+        }
       }));
-      toast.success("Conexões testadas com sucesso!");
+      toast.success("✅ Todas as conexões funcionando!");
     } catch (error: any) {
+      console.error('❌ Erro no teste Vertex AI:', error);
+      
       setStatus(prev => ({
         ...prev,
         vertex: 'error',
-        vertexError: error.message
+        vertexError: error.message || 'Erro desconhecido'
       }));
+      
+      // Mostrar toast específico para erro de billing
+      if (error.message?.includes('BILLING_DISABLED') || error.message?.includes('billing')) {
+        toast.error("❌ Billing desabilitado no Google Cloud", {
+          description: "Ative a cobrança no projeto 'dental-ia'"
+        });
+      } else {
+        toast.error("Erro ao testar Vertex AI", {
+          description: error.message
+        });
+      }
     }
 
     setTesting(false);
@@ -140,14 +160,30 @@ export const GoogleConnectionTest = () => {
           <div className="flex items-center justify-between p-3 border rounded">
             <div className="flex items-center gap-2">
               {getStatusIcon(status.vertex)}
-              <span>Vertex AI API</span>
+              <span>Vertex AI API (Gemini)</span>
             </div>
             {getStatusBadge(status.vertex)}
           </div>
 
+          {status.vertexDetails && (
+            <div className="text-sm text-muted-foreground pl-6">
+              ✅ {status.vertexDetails.message}
+              {status.vertexDetails.response && (
+                <div className="mt-1 text-xs italic">
+                  Resposta: "{status.vertexDetails.response.substring(0, 100)}..."
+                </div>
+              )}
+            </div>
+          )}
+
           {status.vertexError && (
-            <div className="text-sm text-red-500 pl-6">
-              Erro: {status.vertexError}
+            <div className="text-sm text-red-500 pl-6 space-y-1">
+              <div className="font-semibold">❌ Erro: {status.vertexError}</div>
+              {status.vertexError.includes('billing') || status.vertexError.includes('BILLING_DISABLED') ? (
+                <div className="text-xs">
+                  👉 Ative o billing em: <a href="https://console.cloud.google.com/billing/linkedaccount?project=dental-ia" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
