@@ -68,6 +68,55 @@ export function ExamsList({ refreshTrigger, onExamSelect, onExamEdit, onExamDele
 
   useEffect(() => {
     fetchExams();
+
+    // Configurar realtime subscription para detectar mudanças nos exames
+    const channel = supabase
+      .channel('exams-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'exams'
+        },
+        (payload) => {
+          console.log('Exam updated:', payload);
+          const updatedExam = payload.new as Exam;
+          
+          setExams(current => 
+            current.map(exam => 
+              exam.id === updatedExam.id 
+                ? { ...exam, ...updatedExam }
+                : exam
+            )
+          );
+
+          // Mostrar notificação quando o exame for concluído
+          if (updatedExam.status === 'completed') {
+            toast.success(`Exame concluído: ${updatedExam.exam_type}`);
+          } else if (updatedExam.status === 'failed') {
+            toast.error(`Falha no processamento do exame: ${updatedExam.exam_type}`);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'exams'
+        },
+        (payload) => {
+          console.log('New exam inserted:', payload);
+          fetchExams(); // Recarregar lista completa para novos exames
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refreshTrigger]);
 
   const getStatusIcon = (status: string) => {
