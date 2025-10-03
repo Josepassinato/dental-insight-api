@@ -335,7 +335,7 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
             }
 
             aiAnalysis = {
-              model: 'google/gemini-2.5-flash',
+              model: 'google/gemini-2.5-pro',
               analysis: parsedAnalysis,
               raw_response: aiContent
             };
@@ -344,17 +344,50 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
             const confidenceValue = parsedAnalysis.confidence || 75;
             analysisConfidence = confidenceValue > 1 ? confidenceValue / 100 : confidenceValue;
 
-            // Save analysis
+            // Map AI conditions into our standardized findings structure used by the UI
+            const normalizeFindingType = (name: string): string => {
+              const n = (name || '').toLowerCase();
+              if (n.includes('cárie') || n.includes('carie') || n.includes('cari')) return 'carie';
+              if (n.includes('periapical')) return 'periapical';
+              if (n.includes('periodont')) return 'periodontite';
+              if (n.includes('gengivite')) return 'gengivite';
+              if (n.includes('perda óssea') || n.includes('perda ossea') || n.includes('reabsor')) return 'perda_ossea';
+              if (n.includes('restaura')) return 'restauracao_defeituosa';
+              if (n.includes('cálculo') || n.includes('calculo') || n.includes('tártaro') || n.includes('tartaro')) return 'calculo';
+              if (n.includes('impact') || n.includes('inclus')) return 'impactacao';
+              if (n.includes('fratura')) return 'fratura';
+              return 'achado';
+            };
+
+            const toSeverity = (sev: string | undefined): 'leve' | 'moderada' | 'severa' => {
+              const s = (sev || '').toLowerCase();
+              if (s.startsWith('sev')) return 'severa';
+              if (s.startsWith('mod')) return 'moderada';
+              return 'leve';
+            };
+
+            const conds = Array.isArray(parsedAnalysis.conditions) ? parsedAnalysis.conditions : [];
+            const mappedFindings = conds.map((c: any, idx: number) => ({
+              id: (globalThis.crypto?.randomUUID?.() || `${imageData.id}-${idx}`),
+              tooth_number: typeof c.location === 'string' ? c.location.match(/\b\d{1,2}\b/)?.[0] : undefined,
+              finding_type: normalizeFindingType(c.name || ''),
+              severity: toSeverity(c.severity),
+              confidence: analysisConfidence ?? 0.75,
+              description: c.details || c.name || 'Achado detectado',
+            }));
+
+            // Save analysis + mapped findings
             await supabase
               .from('dental_images')
               .update({
                 processing_status: 'analyzed',
                 ai_analysis: aiAnalysis,
-                analysis_confidence: analysisConfidence
+                analysis_confidence: analysisConfidence,
+                findings: mappedFindings
               })
               .eq('id', imageData.id);
 
-            console.log('Analysis saved successfully');
+            console.log('Analysis saved successfully with', mappedFindings.length, 'findings');
           } catch (analysisError) {
             console.error('Analysis error:', analysisError);
             console.error('Full error details:', JSON.stringify(analysisError, null, 2));
