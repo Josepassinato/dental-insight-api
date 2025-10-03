@@ -158,6 +158,42 @@ serve(async (req) => {
       // no body provided
     }
 
+    // Prefer Lovable AI Gateway if available (no GCP setup required)
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+    if (lovableKey) {
+      console.log('Using Lovable AI Gateway with google/gemini-2.5-flash');
+      const gatewayResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant for a dental imaging app. Keep answers concise.' },
+            { role: 'user', content: prompt }
+          ],
+          stream: false
+        })
+      });
+
+      if (!gatewayResp.ok) {
+        if (gatewayResp.status === 429) {
+          return new Response(JSON.stringify({ ok: false, error: 'Rate limits exceeded, please try again later.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (gatewayResp.status === 402) {
+          return new Response(JSON.stringify({ ok: false, error: 'Payment required, please add funds to your Lovable AI workspace.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        const t = await gatewayResp.text();
+        throw new Error(`AI gateway error: ${gatewayResp.status} - ${t}`);
+      }
+
+      const data = await gatewayResp.json();
+      return new Response(JSON.stringify({ ok: true, data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Fallback: Use Google Vertex AI with service account
     // Robust credentials parsing: supports JSON and base64-encoded JSON
     const rawCreds = Deno.env.get('dental-ia')?.trim();
     let projectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID')?.trim() || '';
