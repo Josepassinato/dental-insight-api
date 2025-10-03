@@ -99,9 +99,12 @@ async function getAccessToken(credentials: GoogleCredentials): Promise<string> {
 
 async function callVertexAI(accessToken: string, projectId: string, prompt: string) {
   const region = "us-central1";
-  const model = "gemini-1.5-flash";
+  const model = "gemini-1.5-flash-002";
   
   const url = `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent`;
+  
+  console.log(`[Vertex AI] Project: ${projectId}, Region: ${region}, Model: ${model}`);
+  console.log(`[Vertex AI] URL completa: ${url}`);
 
   const requestBody = {
     contents: [{
