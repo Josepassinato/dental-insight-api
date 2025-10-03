@@ -616,6 +616,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_system_admin: boolean
           role: string
           tenant_id: string | null
           updated_at: string | null
@@ -625,6 +626,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          is_system_admin?: boolean
           role?: string
           tenant_id?: string | null
           updated_at?: string | null
@@ -634,6 +636,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_system_admin?: boolean
           role?: string
           tenant_id?: string | null
           updated_at?: string | null
@@ -925,6 +928,10 @@ export type Database = {
         Args: { tenant_uuid: string }
         Returns: boolean
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_user_role: {
         Args: { tenant_uuid: string; user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -934,6 +941,14 @@ export type Database = {
         Returns: string
       }
       is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
+      is_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_tenant_owner: {
         Args: { user_uuid?: string }
         Returns: boolean
       }
@@ -968,7 +983,7 @@ export type Database = {
         | "cephalometric"
         | "cbct"
       plan_type: "basic" | "professional" | "enterprise"
-      user_role: "admin" | "dentist" | "assistant" | "viewer"
+      user_role: "admin" | "dentist" | "assistant" | "viewer" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1105,7 +1120,7 @@ export const Constants = {
         "cbct",
       ],
       plan_type: ["basic", "professional", "enterprise"],
-      user_role: ["admin", "dentist", "assistant", "viewer"],
+      user_role: ["admin", "dentist", "assistant", "viewer", "owner"],
     },
   },
 } as const

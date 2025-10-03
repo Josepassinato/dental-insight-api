@@ -38,12 +38,12 @@ export default function Admin() {
         return;
       }
 
-      // Check if user is admin using the is_admin() function
+      // Verificar se o usuário é system admin usando is_system_admin()
       const { data: adminCheck, error } = await supabase
-        .rpc('is_admin', { user_uuid: user.id });
+        .rpc('is_system_admin');
 
       if (error || !adminCheck) {
-        toast.error("Você não tem permissão para acessar esta área");
+        toast.error("Acesso negado. Esta área é restrita ao administrador do sistema.");
         navigate("/");
         return;
       }

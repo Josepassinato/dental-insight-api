@@ -30,10 +30,12 @@ import {
   Cloud,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { vertexGenerate } from "@/lib/vertexClient";
+import { TeamManagement } from "@/components/TeamManagement";
 
 interface TenantSettings {
   ai_preferences: {
@@ -812,12 +814,16 @@ const Settings = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="ai" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="ai">IA</TabsTrigger>
             <TabsTrigger value="reports">Relatórios</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
             <TabsTrigger value="branding">Visual</TabsTrigger>
             <TabsTrigger value="integrations">Integrações</TabsTrigger>
+            <TabsTrigger value="team">
+              <Users className="h-4 w-4 mr-2" />
+              Equipe
+            </TabsTrigger>
             <TabsTrigger value="api">API</TabsTrigger>
           </TabsList>
 
@@ -1420,6 +1426,11 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Team Management */}
+          <TabsContent value="team" className="space-y-6">
+            <TeamManagement />
           </TabsContent>
 
           {/* API Keys */}
