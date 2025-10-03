@@ -12,7 +12,6 @@ import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
-import UserManagement from "./pages/UserManagement";
 import Integrations from "./pages/Integrations";
 import BackupExport from "./pages/BackupExport";
 import FineTuning from "./pages/FineTuning";
@@ -39,7 +38,6 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/backup" element={<BackupExport />} />
-          <Route path="/users" element={<UserManagement />} />
           <Route path="/fine-tuning" element={<FineTuning />} />
           <Route path="/exam/:examId" element={<ExamDetail />} />
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
