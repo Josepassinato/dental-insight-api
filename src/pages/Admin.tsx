@@ -9,6 +9,8 @@ import { AdminTenants } from "@/components/admin/AdminTenants";
 import { AdminPlans } from "@/components/admin/AdminPlans";
 import { AdminSupport } from "@/components/admin/AdminSupport";
 import { AdminMetrics } from "@/components/admin/AdminMetrics";
+import { GoogleConnectionTest } from "@/components/GoogleConnectionTest";
+import { TestDentalAnalysis } from "@/components/TestDentalAnalysis";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -186,6 +188,7 @@ export default function Admin() {
             <TabsTrigger value="tenants">Clínicas</TabsTrigger>
             <TabsTrigger value="plans">Planos</TabsTrigger>
             <TabsTrigger value="support">Suporte</TabsTrigger>
+            <TabsTrigger value="tests">Testes IA</TabsTrigger>
           </TabsList>
 
           <TabsContent value="metrics">
@@ -202,6 +205,13 @@ export default function Admin() {
 
           <TabsContent value="support">
             <AdminSupport />
+          </TabsContent>
+
+          <TabsContent value="tests">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GoogleConnectionTest />
+              <TestDentalAnalysis />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
