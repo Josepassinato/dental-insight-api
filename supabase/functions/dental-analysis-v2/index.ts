@@ -211,13 +211,13 @@ serve(async (req) => {
             }
             const base64Content = btoa(binary);
 
-            // Use Lovable AI Gateway with Gemini 2.5 Flash for vision analysis
+            // Use Lovable AI Gateway with Gemini 2.5 Pro for specialized dental vision analysis
             const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
             if (!lovableApiKey) {
               throw new Error('LOVABLE_API_KEY não configurado');
             }
 
-            console.log('Analyzing with Vertex AI (Gemini 2.5 Flash)...');
+            console.log('Analyzing with Vertex AI (Gemini 2.5 Pro - Specialized Dental Analysis)...');
 
             const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
@@ -226,25 +226,66 @@ serve(async (req) => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'google/gemini-2.5-flash',
+                model: 'google/gemini-2.5-pro',
                 messages: [
                   {
                     role: 'system',
-                    content: 'Você é um assistente especializado em análise de imagens dentais. Analise a imagem fornecida e identifique características relevantes, condições dentárias, e forneça insights profissionais.'
+                    content: `Você é um assistente de diagnóstico odontológico altamente especializado em análise de imagens dentais. 
+Sua função é realizar uma análise DETALHADA e TÉCNICA de imagens radiográficas e fotográficas intraorais/extraorais.
+
+IMPORTANTE: Você DEVE identificar TODAS as patologias, anormalidades e condições presentes na imagem, incluindo:
+- Cáries (iniciais, moderadas, profundas)
+- Lesões periapicais e periodontais
+- Reabsorções ósseas
+- Fraturas dentárias
+- Restaurações deficientes
+- Inclusões dentárias (dentes não erupcionados)
+- Má oclusão
+- Tártaro e cálculo dental
+- Gengivite e periodontite
+- Lesões de tecidos moles
+- Alterações no esmalte e dentina
+
+Seja EXTREMAMENTE detalhado e técnico nas suas observações. Use terminologia odontológica precisa.`
                   },
                   {
                     role: 'user',
                     content: [
                       {
                         type: 'text',
-                        text: `Analise esta imagem dental do tipo "${examType}" e forneça:
-1. Descrição geral da imagem
-2. Condições dentárias identificadas
-3. Áreas de atenção ou preocupação
-4. Qualidade da imagem
-5. Nível de confiança da análise (0-100)
+                        text: `Analise esta imagem dental do tipo "${examType}" realizando uma avaliação odontológica completa e detalhada.
 
-Responda em formato JSON com as chaves: description, conditions, concerns, image_quality, confidence`
+INSTRUÇÕES IMPORTANTES:
+1. Examine TODA a imagem com atenção aos mínimos detalhes
+2. Identifique e descreva TODAS as patologias, lesões e anormalidades presentes
+3. Para CADA dente visível, avalie sua condição individual
+4. Seja específico sobre localização (dente, superfície, região)
+5. Use a nomenclatura odontológica correta (FDI, Universal ou Palmer)
+6. Avalie severidade de cada achado (leve, moderado, severo)
+
+FORNEÇA NO FORMATO JSON:
+{
+  "description": "Descrição detalhada e técnica da imagem e estruturas anatômicas visíveis",
+  "conditions": [
+    {
+      "name": "Nome da condição/patologia",
+      "location": "Localização específica (dente, superfície, região)",
+      "severity": "leve|moderado|severo",
+      "details": "Descrição técnica detalhada"
+    }
+  ],
+  "concerns": [
+    {
+      "priority": "alta|média|baixa",
+      "finding": "Descrição do achado que requer atenção",
+      "recommendation": "Recomendação clínica específica"
+    }
+  ],
+  "image_quality": "Avaliação da qualidade técnica da imagem (excelente|boa|regular|ruim)",
+  "confidence": 85
+}
+
+ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma análise superficial pode comprometer o diagnóstico.`
                       },
                       {
                         type: 'image_url',
