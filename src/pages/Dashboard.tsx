@@ -291,6 +291,7 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <Button
+              data-tour="patients"
               variant="outline"
               onClick={() => navigate("/patients")}
               className="flex items-center gap-2"
@@ -299,6 +300,7 @@ const Dashboard = () => {
               Pacientes
             </Button>
             <Button
+              data-tour="analytics"
               variant="outline"
               onClick={() => navigate("/analytics")}
               className="flex items-center gap-2"
@@ -323,6 +325,7 @@ const Dashboard = () => {
               Backup
             </Button>
             <Button
+              data-tour="settings"
               variant="outline"
               onClick={() => navigate("/settings")}
               className="flex items-center gap-2"
@@ -339,6 +342,7 @@ const Dashboard = () => {
               Usuários
             </Button>
             <Button
+              data-tour="upload"
               onClick={() => setShowUpload(true)}
               disabled={!canUploadMore()}
               className="flex items-center gap-2"
@@ -523,7 +527,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Exams Table */}
-        <Card className="mb-6">
+        <Card data-tour="reports" className="mb-6">
           <CardHeader>
             <CardTitle>Exames</CardTitle>
             <CardDescription>
