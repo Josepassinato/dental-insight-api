@@ -684,6 +684,50 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_domains: {
+        Row: {
+          created_at: string | null
+          domain: string
+          id: string
+          is_primary: boolean | null
+          ssl_certificate: string | null
+          tenant_id: string
+          verification_token: string | null
+          verified: boolean | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain: string
+          id?: string
+          is_primary?: boolean | null
+          ssl_certificate?: string | null
+          tenant_id: string
+          verification_token?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string
+          id?: string
+          is_primary?: boolean | null
+          ssl_certificate?: string | null
+          tenant_id?: string
+          verification_token?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_plans: {
         Row: {
           billing_cycle_start: string

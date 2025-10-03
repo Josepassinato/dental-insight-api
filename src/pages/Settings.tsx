@@ -1024,11 +1024,39 @@ const Settings = () => {
 
           {/* Branding */}
           <TabsContent value="branding" className="space-y-6">
+            {/* White Label CTA Card */}
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  White Label Completo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Configure uma identidade visual completa para sua clínica com logo, cores personalizadas, domínio próprio, landing page customizada e muito mais.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="secondary">Novo</Badge>
+                    <span>Domínio Custom • Landing Page • Email Branding • Relatórios Personalizados</span>
+                  </div>
+                  <Button 
+                    onClick={() => navigate("/settings/white-label")}
+                    className="w-full"
+                  >
+                    <Palette className="mr-2 h-4 w-4" />
+                    Acessar Configuração White Label
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="h-5 w-5" />
-                  Identidade Visual
+                  Identidade Visual (Básico)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">

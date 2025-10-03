@@ -19,6 +19,7 @@ import FineTuning from "./pages/FineTuning";
 import ExamDetail from "./pages/ExamDetail";
 import Diagnostics from "./pages/Diagnostics";
 import Admin from "./pages/Admin";
+import WhiteLabelSettings from "./pages/WhiteLabelSettings";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/embed/viewer/:examId" element={<EmbedViewer />} />
           <Route path="/diagnostics" element={<Diagnostics />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/settings/white-label" element={<WhiteLabelSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
