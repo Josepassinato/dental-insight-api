@@ -323,6 +323,53 @@ export type Database = {
           },
         ]
       }
+      onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          completed_steps: Json
+          created_at: string
+          id: string
+          skipped_onboarding: boolean
+          tenant_id: string
+          tour_completed: boolean
+          updated_at: string
+          user_id: string
+          videos_watched: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: Json
+          created_at?: string
+          id?: string
+          skipped_onboarding?: boolean
+          tenant_id: string
+          tour_completed?: boolean
+          updated_at?: string
+          user_id: string
+          videos_watched?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: Json
+          created_at?: string
+          id?: string
+          skipped_onboarding?: boolean
+          tenant_id?: string
+          tour_completed?: boolean
+          updated_at?: string
+          user_id?: string
+          videos_watched?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_history: {
         Row: {
           chief_complaint: string | null
@@ -549,9 +596,11 @@ export type Database = {
           current_month_usage: number
           id: string
           is_active: boolean
+          is_trial: boolean
           monthly_exam_limit: number
           plan_type: Database["public"]["Enums"]["plan_type"]
           tenant_id: string
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
@@ -560,9 +609,11 @@ export type Database = {
           current_month_usage?: number
           id?: string
           is_active?: boolean
+          is_trial?: boolean
           monthly_exam_limit?: number
           plan_type?: Database["public"]["Enums"]["plan_type"]
           tenant_id: string
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -571,9 +622,11 @@ export type Database = {
           current_month_usage?: number
           id?: string
           is_active?: boolean
+          is_trial?: boolean
           monthly_exam_limit?: number
           plan_type?: Database["public"]["Enums"]["plan_type"]
           tenant_id?: string
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Relationships: [

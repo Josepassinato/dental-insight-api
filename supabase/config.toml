@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.vertex-gemini-test]
 verify_jwt = false
+
+[functions.check-trial-expiration]
+verify_jwt = false

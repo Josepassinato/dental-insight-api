@@ -45,6 +45,8 @@ interface TenantPlan {
   plan_type: 'basic' | 'professional' | 'enterprise';
   monthly_exam_limit: number;
   current_month_usage: number;
+  is_trial: boolean;
+  trial_ends_at: string | null;
 }
 
 interface ExamData {
@@ -129,7 +131,7 @@ const Dashboard = () => {
       // Load tenant plan
       const { data: planData, error: planError } = await supabase
         .from('tenant_plans')
-        .select('plan_type, monthly_exam_limit, current_month_usage')
+        .select('plan_type, monthly_exam_limit, current_month_usage, is_trial, trial_ends_at')
         .single();
 
       if (planError && planError.code !== 'PGRST116') {
@@ -245,6 +247,16 @@ const Dashboard = () => {
   const usagePercentage = tenantPlan ? 
     (tenantPlan.current_month_usage / tenantPlan.monthly_exam_limit) * 100 : 0;
 
+  const getTrialDaysRemaining = () => {
+    if (!tenantPlan?.is_trial || !tenantPlan?.trial_ends_at) return null;
+    const today = new Date();
+    const trialEnd = new Date(tenantPlan.trial_ends_at);
+    const daysRemaining = Math.ceil((trialEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysRemaining > 0 ? daysRemaining : 0;
+  };
+
+  const trialDaysRemaining = getTrialDaysRemaining();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -264,7 +276,14 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <Building2 className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold text-primary">DentalAI</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-primary">DentalAI</h1>
+                {tenantPlan?.is_trial && trialDaysRemaining !== null && (
+                  <Badge variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}>
+                    TRIAL - {trialDaysRemaining} dias restantes
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 Bem-vindo, {user?.user_metadata?.full_name || user?.email}
               </p>
@@ -336,6 +355,28 @@ const Dashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-6">
+        {/* Trial Warning Banner */}
+        {tenantPlan?.is_trial && trialDaysRemaining !== null && trialDaysRemaining <= 3 && (
+          <Card className="mb-6 border-warning bg-warning/10">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-warning mb-1">
+                    Seu trial expira em {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia' : 'dias'}!
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Para continuar usando o DentalAI sem interrupções, escolha um plano agora.
+                  </p>
+                  <Button onClick={() => navigate("/settings")} size="sm">
+                    Ver Planos
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>

@@ -73,8 +73,7 @@ const Auth = () => {
         }
       } else if (data.user) {
         toast.success("Login realizado com sucesso!");
-        // Force page reload for clean state
-        window.location.href = '/dashboard';
+        navigate("/dashboard");
       }
     } catch (error) {
       setError("Erro inesperado. Tente novamente.");
@@ -115,8 +114,10 @@ const Auth = () => {
         } else {
           setError(error.message);
         }
-      } else {
-        toast.success("Conta criada com sucesso! Verifique seu email para confirmação.");
+      } else if (data.user) {
+        toast.success("Conta criada com sucesso! Redirecionando para o onboarding...");
+        // Redirect to onboarding for new users
+        navigate("/onboarding");
       }
     } catch (error) {
       setError("Erro inesperado. Tente novamente.");
