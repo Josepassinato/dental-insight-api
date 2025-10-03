@@ -297,7 +297,9 @@ Responda em formato JSON com as chaves: description, conditions, concerns, image
               raw_response: aiContent
             };
 
-            analysisConfidence = parsedAnalysis.confidence || 75;
+            // Convert confidence from 0-100 to 0-1 scale for database
+            const confidenceValue = parsedAnalysis.confidence || 75;
+            analysisConfidence = confidenceValue > 1 ? confidenceValue / 100 : confidenceValue;
 
             // Save analysis
             await supabase
