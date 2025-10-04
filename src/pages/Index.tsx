@@ -144,8 +144,7 @@ const Index = () => {
               ✨ Tecnologia de Ponta em IA
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Diagnóstico Dentário
-              <span className="block text-white/90">Inteligente</span>
+              Análise Radiográfica Inteligente
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed">
               Revolucione sua prática com análise de imagens dentárias powered by IA. 
@@ -197,8 +196,7 @@ const Index = () => {
           <div className="text-center mb-20">
             <Badge variant="outline" className="mb-4">Tipos de Análises</Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Exames que 
-              <span className="text-primary"> Atendemos</span>
+              Tipos de Exames e Análises
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Nossa IA está treinada para analisar diversos tipos de exames odontológicos com alta precisão
@@ -230,8 +228,7 @@ const Index = () => {
           <div className="text-center mb-20">
             <Badge variant="outline" className="mb-4">Recursos Avançados</Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Tecnologia que 
-              <span className="text-primary"> Transforma</span>
+              Funcionalidades
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Cada funcionalidade foi projetada para maximizar a eficiência e precisão do seu diagnóstico
@@ -264,8 +261,7 @@ const Index = () => {
             <div className="text-center mb-16">
               <Badge variant="outline" className="mb-4 bg-primary/10">🎨 White Label</Badge>
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Sua Marca,
-                <span className="text-primary"> Nossa Tecnologia</span>
+                White Label
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Personalize completamente a plataforma com sua identidade visual e ofereça a solução como se fosse 100% sua
@@ -359,8 +355,7 @@ const Index = () => {
             <div className="order-2 lg:order-1">
               <Badge variant="outline" className="mb-6">SDK & API</Badge>
               <h2 className="text-4xl font-bold mb-6 leading-tight">
-                Integração em 
-                <span className="text-primary"> Minutos</span>
+                Integração Rápida
               </h2>
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 Nosso SDK foi projetado para desenvolvedores. Integre a análise de IA 
