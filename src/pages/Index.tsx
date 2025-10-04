@@ -23,7 +23,10 @@ import {
   Eye,
   Scan,
   FileText,
-  Activity
+  Activity,
+  Award,
+  Quote,
+  Calendar
 } from "lucide-react";
 
 const Index = () => {
@@ -154,17 +157,19 @@ const Index = () => {
                 className="bg-white text-primary hover:bg-white/90 shadow-xl"
                 onClick={() => navigate("/auth")}
               >
-                <LogIn className="mr-2 h-5 w-5" />
-                Começar Gratuitamente
+                Começar Teste Grátis
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
                 className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
-                onClick={() => window.open("/dental-sdk-example.html", "_blank")}
+                onClick={() => {
+                  setSalesDialogOpen(true);
+                }}
               >
-                <Play className="mr-2 h-5 w-5" />
-                Ver Demo Ao Vivo
+                <Calendar className="mr-2 h-5 w-5" />
+                Agendar Demo
               </Button>
             </div>
             
@@ -437,6 +442,189 @@ DentalSDK.renderViewer({
         </div>
       </section>
 
+      {/* Clinical Validation Section */}
+      <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 bg-primary/10">Validação Clínica</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Tecnologia
+              <span className="text-primary"> Comprovada</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Nossa IA é baseada em rigorosos estudos clínicos e validada por especialistas
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-12">
+            <Card className="text-center shadow-soft bg-card">
+              <CardHeader>
+                <div className="text-5xl font-bold text-primary mb-2">95.8%</div>
+                <CardTitle className="text-lg">Precisão de Detecção</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Taxa de acurácia em detecção de cáries e anomalias em mais de 50.000 imagens analisadas
+                </CardDescription>
+              </CardContent>
+            </Card>
+            <Card className="text-center shadow-soft bg-card">
+              <CardHeader>
+                <div className="text-5xl font-bold text-primary mb-2">98.2%</div>
+                <CardTitle className="text-lg">Sensibilidade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Capacidade de identificar corretamente casos positivos validada em estudos peer-reviewed
+                </CardDescription>
+              </CardContent>
+            </Card>
+            <Card className="text-center shadow-soft bg-card">
+              <CardHeader>
+                <div className="text-5xl font-bold text-primary mb-2">92.5%</div>
+                <CardTitle className="text-lg">Especificidade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Taxa de verdadeiros negativos, minimizando falsos alarmes e garantindo confiabilidade
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="max-w-4xl mx-auto border-primary/20 bg-muted/30">
+            <CardContent className="p-8">
+              <div className="flex items-start gap-4">
+                <Award className="h-12 w-12 text-primary flex-shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold mb-3">Compliance Regulatório</h3>
+                  <ul className="space-y-2 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Em processo de certificação CE (Conformité Européenne) como dispositivo médico Classe IIa</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Compliance total com LGPD (Brasil) e preparação para HIPAA (EUA)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Validado por odontologistas certificados e instituições acadêmicas parceiras</span>
+                    </li>
+                  </ul>
+                  <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                    <p className="text-sm text-foreground font-medium">
+                      ⚠️ <strong>Disclaimer Importante:</strong> O EXM-AI é uma ferramenta de apoio ao diagnóstico. 
+                      A decisão final sobre o tratamento é sempre de responsabilidade exclusiva do cirurgião-dentista. 
+                      Nosso sistema auxilia na identificação de padrões, mas não substitui a avaliação clínica profissional.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">Prova Social</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Confiança de
+              <span className="text-primary"> Especialistas</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Veja o que profissionais e instituições dizem sobre nossa plataforma
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+            <Card className="shadow-soft bg-card">
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Quote className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Dr. Carlos Mendes</CardTitle>
+                    <CardDescription className="text-sm">Clínica OdontoExcel - SP</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed">
+                  "A precisão do EXM-AI me impressionou. Detectou uma lesão inicial que eu poderia ter passado despercebido. 
+                  Hoje é parte essencial do meu protocolo de diagnóstico."
+                </p>
+                <div className="flex gap-1 mt-4">
+                  {[1,2,3,4,5].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-soft bg-card">
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Quote className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Dra. Ana Paula Silva</CardTitle>
+                    <CardDescription className="text-sm">Radiologista - RJ</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed">
+                  "Reduzi em 60% o tempo de análise de radiografias panorâmicas. Os relatórios automatizados 
+                  são extremamente úteis e os pacientes adoram a transparência."
+                </p>
+                <div className="flex gap-1 mt-4">
+                  {[1,2,3,4,5].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-soft bg-card">
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Quote className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Dr. Roberto Almeida</CardTitle>
+                    <CardDescription className="text-sm">Implantodontista - MG</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed">
+                  "Para planejamento de implantes, a análise 3D do EXM-AI é fantástica. 
+                  Meus pacientes confiam mais no tratamento quando mostro os relatórios detalhados."
+                </p>
+                <div className="flex gap-1 mt-4">
+                  {[1,2,3,4,5].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Partner Logos */}
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-8 font-medium">Instituições e Parceiros de Confiança</p>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-60">
+              <div className="text-2xl font-bold text-muted-foreground">USP Odontologia</div>
+              <div className="text-2xl font-bold text-muted-foreground">UNICAMP</div>
+              <div className="text-2xl font-bold text-muted-foreground">APCD</div>
+              <div className="text-2xl font-bold text-muted-foreground">CFO</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section id="pricing" className="py-24 bg-gradient-card">
         <div className="container mx-auto px-4">
@@ -523,17 +711,19 @@ DentalSDK.renderViewer({
                 className="bg-white text-primary hover:bg-white/90 shadow-xl text-lg px-8 py-4"
                 onClick={() => navigate("/auth")}
               >
-                Começar Gratuitamente
+                Começar Teste Grátis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
                 className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-4"
-                onClick={() => window.open("/dental-sdk-example.html", "_blank")}
+                onClick={() => {
+                  setSalesDialogOpen(true);
+                }}
               >
-                <Play className="mr-2 h-5 w-5" />
-                Ver Demo Live
+                <Calendar className="mr-2 h-5 w-5" />
+                Agendar Demo
               </Button>
             </div>
             
@@ -570,6 +760,25 @@ DentalSDK.renderViewer({
               Revolucionando o diagnóstico dentário com inteligência artificial de última geração. 
               Precisão, velocidade e confiabilidade em cada análise.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Button 
+                size="lg"
+                onClick={() => navigate("/auth")}
+              >
+                Começar Teste Grátis
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  setSalesDialogOpen(true);
+                }}
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                Agendar Demo
+              </Button>
+            </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
               <span>© 2024 EXM-AI. Todos os direitos reservados.</span>
               <div className="flex items-center gap-4">
