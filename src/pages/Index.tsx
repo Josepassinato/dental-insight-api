@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,26 +115,46 @@ const Index = () => {
     }
   ];
 
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": ["Organization","SoftwareApplication"],
+    "name": "EXM-AI",
+    "url": "https://www.exm-ai.com/",
+    "logo": "https://www.exm-ai.com/logo.png",
+    "description": "SaaS de diagnóstico odontológico por IA: relatórios em segundos.",
+    "applicationCategory": "MedicalApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "299", "priceCurrency": "BRL" }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-md border-b z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">EXM-AI</span>
+    <>
+      <Helmet>
+        <title>EXM-AI | Análise Radiográfica Inteligente com IA</title>
+        <meta name="description" content="Plataforma SaaS de diagnóstico odontológico por IA. Analisa radiografias e tomografias e gera relatórios em segundos, com alta precisão. Teste grátis." />
+        <link rel="canonical" href="https://www.exm-ai.com/" />
+        <script type="application/ld+json">{JSON.stringify(schema)}</script>
+      </Helmet>
+
+      <div className="min-h-screen bg-background">
+        {/* Navigation */}
+        <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-md border-b z-50" role="navigation" aria-label="Navegação principal">
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-primary" aria-hidden="true" />
+              <span className="text-xl font-bold">EXM-AI</span>
+            </div>
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
+              <a href="#integration" className="text-muted-foreground hover:text-foreground transition-colors">Integração</a>
+              <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Preços</a>
+            </div>
+            <Button onClick={() => navigate("/auth")} size="sm" aria-label="Fazer login">
+              <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
+              Entrar
+            </Button>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
-            <a href="#integration" className="text-muted-foreground hover:text-foreground transition-colors">Integração</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Preços</a>
-          </div>
-          <Button onClick={() => navigate("/auth")} size="sm">
-            <LogIn className="mr-2 h-4 w-4" />
-            Entrar
-          </Button>
-        </div>
-      </nav>
+        </nav>
 
       {/* Hero Section */}
       <section className="relative bg-gradient-primary text-white pt-24 pb-20 overflow-hidden">
@@ -788,7 +809,13 @@ DentalSDK.renderViewer({
                 >
                   Privacidade
                 </a>
-                <a href="#" className="hover:text-foreground transition-colors">Termos</a>
+                <a 
+                  href="/security" 
+                  onClick={(e) => { e.preventDefault(); navigate("/security"); }}
+                  className="hover:text-foreground transition-colors"
+                >
+                  Segurança
+                </a>
                 <a href="mailto:contato@exm-ai.com" className="hover:text-foreground transition-colors">Suporte</a>
               </nav>
             </div>
@@ -802,6 +829,7 @@ DentalSDK.renderViewer({
         planInterest={selectedPlan}
       />
     </div>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'
 import './index.css'
 import { TenantBrandingProvider } from './contexts/TenantBrandingContext'
@@ -17,7 +18,9 @@ if ('serviceWorker' in navigator) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <TenantBrandingProvider>
-    <App />
-  </TenantBrandingProvider>
+  <HelmetProvider>
+    <TenantBrandingProvider>
+      <App />
+    </TenantBrandingProvider>
+  </HelmetProvider>
 );
