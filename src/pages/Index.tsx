@@ -188,6 +188,101 @@ const Index = () => {
         </div>
       </section>
 
+      {/* White Label Section */}
+      <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <Badge variant="outline" className="mb-4 bg-primary/10">🎨 White Label</Badge>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Sua Marca,
+                <span className="text-primary"> Nossa Tecnologia</span>
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Personalize completamente a plataforma com sua identidade visual e ofereça a solução como se fosse 100% sua
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              <Card className="border-2 border-primary/20 shadow-lg bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Identidade Visual Completa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Logotipo e cores personalizadas</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Domínio próprio (seu-site.com.br)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>E-mails com sua marca</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Relatórios PDF personalizados</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-primary/20 shadow-lg bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Modelo de Negócio Flexível</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Revenda com sua margem de lucro</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Gestão multi-clínicas</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Dashboard administrativo completo</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                      <span>Suporte técnico dedicado</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 shadow-xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-3">Pronto para Lançar sua Própria Plataforma?</h3>
+                    <p className="text-muted-foreground text-lg">
+                      Entre em contato e descubra como transformar nossa tecnologia em seu produto
+                    </p>
+                  </div>
+                  <Button size="lg" className="shadow-lg whitespace-nowrap" onClick={() => navigate("/auth")}>
+                    Solicitar White Label
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Integration Section */}
       <section id="integration" className="py-24">
         <div className="container mx-auto px-4">
