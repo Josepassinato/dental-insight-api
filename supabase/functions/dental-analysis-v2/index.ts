@@ -203,7 +203,7 @@ IMPORTANTE: Considere estes dados do paciente ao realizar a análise. A idade po
               file_size: file.size,
               mime_type: file.type,
               image_type: examType,
-              processing_status: 'queued'
+              processing_status: 'pending'
             })
             .select()
             .single();
