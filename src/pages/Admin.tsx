@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Building2, Users, TrendingUp, AlertCircle, Activity } from "lucide-react";
+import { Building2, Users, TrendingUp, AlertCircle, Activity, LogOut } from "lucide-react";
 import { AdminTenants } from "@/components/admin/AdminTenants";
 import { AdminPlans } from "@/components/admin/AdminPlans";
 import { AdminSupport } from "@/components/admin/AdminSupport";
 import { AdminMetrics } from "@/components/admin/AdminMetrics";
 import { GoogleConnectionTest } from "@/components/GoogleConnectionTest";
 import { TestDentalAnalysis } from "@/components/TestDentalAnalysis";
+import { Button } from "@/components/ui/button";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -33,8 +34,7 @@ export default function Admin() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error("Acesso negado");
-        navigate("/");
+        navigate("/admin/login");
         return;
       }
 
@@ -44,7 +44,7 @@ export default function Admin() {
 
       if (error || !adminCheck) {
         toast.error("Acesso negado. Esta área é restrita ao administrador do sistema.");
-        navigate("/");
+        navigate("/admin/login");
         return;
       }
 
@@ -57,6 +57,12 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAdminLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logout realizado com sucesso!");
+    navigate("/admin/login");
   };
 
   const loadMetrics = async () => {
@@ -126,6 +132,10 @@ export default function Admin() {
             <h1 className="text-3xl font-bold">Painel Administrativo</h1>
             <p className="text-muted-foreground">Gestão completa do SaaS</p>
           </div>
+          <Button variant="outline" onClick={handleAdminLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
 
         {/* Metrics Cards */}

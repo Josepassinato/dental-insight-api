@@ -84,7 +84,6 @@ const Dashboard = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   
   // Use realtime hook for dental images
   const { images: realtimeImages, loading: imagesLoading, refetch: refetchImages } = useRealtimeDentalImages();
@@ -143,14 +142,6 @@ const Dashboard = () => {
 
       // Load audit logs (simplified)
       setAuditLogs([]);
-
-      // Check if user is admin
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: adminCheck } = await supabase
-          .rpc('is_admin', { user_uuid: user.id });
-        setIsAdmin(adminCheck || false);
-      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -342,16 +333,6 @@ const Dashboard = () => {
               <Settings className="h-4 w-4" />
               Configurações
             </Button>
-            {isAdmin && (
-              <Button
-                variant="default"
-                onClick={() => navigate("/admin")}
-                className="flex items-center gap-2"
-              >
-                <Shield className="h-4 w-4" />
-                Admin
-              </Button>
-            )}
             <Button
               variant="outline"
               onClick={() => navigate("/users")}
