@@ -19,13 +19,40 @@ import {
   LogIn,
   Play,
   Star,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  Scan,
+  FileText,
+  Activity
 } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
   const [salesDialogOpen, setSalesDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | undefined>();
+
+  const analysisTypes = [
+    {
+      icon: Scan,
+      title: "Radiografia Panorâmica",
+      description: "Análise completa da estrutura dentária, detecção de cáries, fraturas e anomalias ósseas"
+    },
+    {
+      icon: Eye,
+      title: "Radiografia Periapical",
+      description: "Avaliação detalhada de dentes individuais, raízes e tecidos ao redor"
+    },
+    {
+      icon: Activity,
+      title: "Tomografia Computadorizada",
+      description: "Imagens 3D para planejamento de implantes e avaliação de estruturas complexas"
+    },
+    {
+      icon: FileText,
+      title: "Análise de Mordida",
+      description: "Avaliação oclusal e identificação de problemas de alinhamento"
+    }
+  ];
 
   const features = [
     {
@@ -155,6 +182,39 @@ const Index = () => {
                 <span>95% de precisão</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Analysis Types Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-20">
+            <Badge variant="outline" className="mb-4">Tipos de Análises</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Exames que 
+              <span className="text-primary"> Atendemos</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Nossa IA está treinada para analisar diversos tipos de exames odontológicos com alta precisão
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {analysisTypes.map((type, index) => (
+              <Card key={index} className="group shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1 border border-border/50 bg-card">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
+                    <type.icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{type.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <CardDescription className="text-sm leading-relaxed">
+                    {type.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
