@@ -30,7 +30,8 @@ import {
   BarChart3,
   Globe,
   Archive,
-  Shield
+  Shield,
+  BookOpen
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -40,6 +41,7 @@ import { toast } from "sonner";
 import { DentalImageUpload } from "@/components/DentalImageUpload";
 import { ExamViewerModal } from "@/components/ExamViewerModal";
 import { useRealtimeDentalImages } from "@/hooks/useRealtimeDentalImages";
+import { TutorialButton, SystemTutorial } from "@/components/SystemTutorial";
 
 interface TenantPlan {
   plan_type: 'basic' | 'professional' | 'enterprise';
@@ -84,6 +86,7 @@ const Dashboard = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   
   // Use realtime hook for dental images
   const { images: realtimeImages, loading: imagesLoading, refetch: refetchImages } = useRealtimeDentalImages();
@@ -138,6 +141,21 @@ const Dashboard = () => {
         console.error('Error loading plan:', planError);
       } else {
         setTenantPlan(planData);
+      }
+
+      // Check if user has completed tutorial
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: onboardingData } = await supabase
+          .from('onboarding_progress')
+          .select('tour_completed')
+          .eq('user_id', user.id)
+          .single();
+
+        // Auto-start tutorial for new users
+        if (onboardingData && !onboardingData.tour_completed) {
+          setTimeout(() => setShowTutorial(true), 1000);
+        }
       }
 
       // Load audit logs (simplified)
@@ -290,6 +308,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <TutorialButton />
             <Button
               data-tour="patients"
               variant="outline"
@@ -340,6 +359,14 @@ const Dashboard = () => {
             >
               <Shield className="h-4 w-4" />
               Usuários
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/help")}
+              className="flex items-center gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              Ajuda
             </Button>
             <Button
               data-tour="upload"
@@ -674,10 +701,15 @@ const Dashboard = () => {
 
       {/* Exam Viewer Modal */}
       {selectedExam && (
-        <ExamViewerModal 
+        <ExamViewerModal
           exam={selectedExam}
           onClose={() => setSelectedExam(null)}
         />
+      )}
+
+      {/* Tutorial */}
+      {showTutorial && (
+        <SystemTutorial onComplete={() => setShowTutorial(false)} />
       )}
     </div>
   );

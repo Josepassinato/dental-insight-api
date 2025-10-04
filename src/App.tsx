@@ -20,6 +20,7 @@ import Diagnostics from "./pages/Diagnostics";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import WhiteLabelSettings from "./pages/WhiteLabelSettings";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/settings/white-label" element={<WhiteLabelSettings />} />
+          <Route path="/help" element={<Help />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
