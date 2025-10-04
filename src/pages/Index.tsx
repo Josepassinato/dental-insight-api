@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SalesContactDialog } from "@/components/SalesContactDialog";
 
 import { 
   Brain, 
@@ -22,6 +24,8 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [salesDialogOpen, setSalesDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | undefined>();
 
   const features = [
     {
@@ -421,7 +425,14 @@ DentalSDK.renderViewer({
                     className="w-full group-hover:scale-105 transition-transform" 
                     variant={index === 1 ? "default" : "outline"}
                     size="lg"
-                    onClick={() => navigate("/auth")}
+                    onClick={() => {
+                      if (index === 2) {
+                        setSelectedPlan(plan.name);
+                        setSalesDialogOpen(true);
+                      } else {
+                        navigate("/auth");
+                      }
+                    }}
                   >
                     {index === 2 ? "Falar com Vendas" : "Começar Agora"}
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -510,6 +521,12 @@ DentalSDK.renderViewer({
           </div>
         </div>
       </footer>
+
+      <SalesContactDialog 
+        open={salesDialogOpen} 
+        onOpenChange={setSalesDialogOpen}
+        planInterest={selectedPlan}
+      />
     </div>
   );
 };

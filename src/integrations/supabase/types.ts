@@ -684,6 +684,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          plan_interest: string | null
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          plan_interest?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          plan_interest?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       tenant_domains: {
         Row: {
           created_at: string | null
