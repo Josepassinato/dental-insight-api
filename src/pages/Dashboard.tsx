@@ -329,14 +329,6 @@ const Dashboard = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate("/integrations")}
-              className="flex items-center gap-2"
-            >
-              <Globe className="h-4 w-4" />
-              Integrações
-            </Button>
-            <Button
-              variant="outline"
               onClick={() => navigate("/backup")}
               className="flex items-center gap-2"
             >
