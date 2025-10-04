@@ -59,21 +59,21 @@ const Index = () => {
   const plans = [
     {
       name: "Basic",
-      price: "R$ 299",
-      period: "/mês",
+      price: "",
+      period: "",
       exams: "50 exames",
       features: ["Análise de IA", "Relatórios PDF", "Suporte email"]
     },
     {
       name: "Professional",
-      price: "R$ 599", 
-      period: "/mês",
+      price: "", 
+      period: "",
       exams: "200 exames",
       features: ["Análise de IA", "Relatórios PDF", "SDK Web", "API", "Suporte prioritário"]
     },
     {
       name: "Enterprise",
-      price: "Customizado",
+      price: "",
       period: "",
       exams: "Ilimitado",
       features: ["Tudo do Professional", "Integração customizada", "Suporte 24/7", "SLA dedicado"]
