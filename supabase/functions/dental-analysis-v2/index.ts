@@ -458,7 +458,7 @@ ATENÇÃO: Seja rigoroso e não deixe passar nenhuma alteração visível. Uma a
               await supabase
                 .from('dental_images')
                 .update({
-                  processing_status: 'analyzed',
+                  processing_status: 'completed',
                   ai_analysis: aiAnalysis,
                   analysis_confidence: analysisConfidence,
                   findings: mappedFindings
