@@ -87,7 +87,7 @@ const Index = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">DentalAI</span>
+            <span className="text-xl font-bold">EXM-AI</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
@@ -398,14 +398,14 @@ DentalSDK.renderViewer({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-6">
               <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">DentalAI</span>
+              <span className="text-2xl font-bold">EXM-AI</span>
             </div>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
               Revolucionando o diagnóstico dentário com inteligência artificial de última geração. 
               Precisão, velocidade e confiabilidade em cada análise.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
-              <span>© 2024 DentalAI. Todos os direitos reservados.</span>
+              <span>© 2024 EXM-AI. Todos os direitos reservados.</span>
               <div className="flex items-center gap-4">
                 <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
                 <a href="#" className="hover:text-foreground transition-colors">Termos</a>
