@@ -28,6 +28,10 @@
     <meta name="twitter:description" content="Análise automática de imagens dentárias e relatórios em segundos. Teste grátis." />
     <meta name="twitter:image" content="https://www.exm-ai.com/og-image.jpg" />
 
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
@@ -47,6 +51,19 @@
     }
     </script>
   </head>
+
+  <body>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: system-ui, -apple-system, sans-serif;">
+        <h1>EXM-AI - Análise Radiográfica Inteligente</h1>
+        <p>Plataforma SaaS de diagnóstico odontológico com IA. Análise automática de radiografias e tomografias, relatórios em segundos, 95% de precisão.</p>
+        <p><strong>Este site requer JavaScript para funcionar.</strong> Por favor, habilite o JavaScript no seu navegador.</p>
+        <p>Entre em contato: <a href="mailto:contato@exm-ai.com">contato@exm-ai.com</a></p>
+      </div>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 
   <body>
     <div id="root"></div>

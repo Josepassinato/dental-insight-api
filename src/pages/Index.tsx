@@ -143,7 +143,7 @@ const Index = () => {
             <Badge variant="secondary" className="mb-6 bg-white/10 text-white border-white/20">
               ✨ Tecnologia de Ponta em IA
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight" tabIndex={-1}>
               Análise Radiográfica Inteligente
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed">
@@ -155,9 +155,10 @@ const Index = () => {
                 size="lg" 
                 className="bg-white text-primary hover:bg-white/90 shadow-xl"
                 onClick={() => navigate("/auth")}
+                aria-label="Começar teste grátis da plataforma"
               >
                 Começar Teste Grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>
               <Button 
                 size="lg" 
@@ -166,8 +167,9 @@ const Index = () => {
                 onClick={() => {
                   setSalesDialogOpen(true);
                 }}
+                aria-label="Agendar demonstração da plataforma"
               >
-                <Calendar className="mr-2 h-5 w-5" />
+                <Calendar className="mr-2 h-5 w-5" aria-hidden="true" />
                 Agendar Demo
               </Button>
             </div>
@@ -759,9 +761,10 @@ DentalSDK.renderViewer({
               <Button 
                 size="lg"
                 onClick={() => navigate("/auth")}
+                aria-label="Começar teste grátis da plataforma"
               >
                 Começar Teste Grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>
               <Button 
                 size="lg"
@@ -769,18 +772,25 @@ DentalSDK.renderViewer({
                 onClick={() => {
                   setSalesDialogOpen(true);
                 }}
+                aria-label="Agendar demonstração da plataforma"
               >
-                <Calendar className="mr-2 h-5 w-5" />
+                <Calendar className="mr-2 h-5 w-5" aria-hidden="true" />
                 Agendar Demo
               </Button>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
               <span>© 2024 EXM-AI. Todos os direitos reservados.</span>
-              <div className="flex items-center gap-4">
-                <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
+              <nav className="flex items-center gap-4" aria-label="Links do rodapé">
+                <a 
+                  href="/privacy" 
+                  onClick={(e) => { e.preventDefault(); navigate("/privacy"); }}
+                  className="hover:text-foreground transition-colors"
+                >
+                  Privacidade
+                </a>
                 <a href="#" className="hover:text-foreground transition-colors">Termos</a>
-                <a href="#" className="hover:text-foreground transition-colors">Suporte</a>
-              </div>
+                <a href="mailto:contato@exm-ai.com" className="hover:text-foreground transition-colors">Suporte</a>
+              </nav>
             </div>
           </div>
         </div>
