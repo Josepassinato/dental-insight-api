@@ -130,6 +130,27 @@ export function DentalImageUpload({ onUploadComplete, onClose }: DentalImageUplo
         throw new Error('Perfil de usuário não encontrado');
       }
 
+      // Verificar limite de exames
+      const { data: planData } = await supabase
+        .from('tenant_plans')
+        .select('monthly_exam_limit, current_month_usage')
+        .eq('tenant_id', profile.tenant_id)
+        .single();
+
+      if (planData) {
+        const examesRestantes = planData.monthly_exam_limit - planData.current_month_usage;
+        if (examesRestantes <= 0) {
+          toast.error('Você atingiu o limite de 6 exames gratuitos. Entre em contato para fazer upgrade.');
+          setUploading(false);
+          return;
+        }
+        if (files.length > examesRestantes) {
+          toast.error(`Você só pode fazer upload de ${examesRestantes} exame(s) - limite de 6 exames gratuitos atingido.`);
+          setUploading(false);
+          return;
+        }
+      }
+
       // Prepare form data
       const formData = new FormData();
       files.forEach((file, i) => {
