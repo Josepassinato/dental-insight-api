@@ -295,7 +295,7 @@ const Dashboard = () => {
             <Building2 className="h-8 w-8 text-primary" />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-primary">DentalAI</h1>
+                <h1 className="text-2xl font-bold text-primary">exm-ai.com</h1>
                 {tenantPlan?.is_trial && trialDaysRemaining !== null && (
                   <Badge variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}>
                     TRIAL - {trialDaysRemaining} dias restantes
@@ -397,7 +397,7 @@ const Dashboard = () => {
                     Seu trial expira em {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia' : 'dias'}!
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Para continuar usando o DentalAI sem interrupções, escolha um plano agora.
+                    Para continuar usando o exm-ai.com sem interrupções, escolha um plano agora.
                   </p>
                   <Button onClick={() => navigate("/settings")} size="sm">
                     Ver Planos

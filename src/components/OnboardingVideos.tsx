@@ -23,7 +23,7 @@ interface OnboardingVideosProps {
 const videos: Video[] = [
   {
     id: "intro",
-    title: "Introdução ao DentalAI",
+    title: "Introdução ao exm-ai.com",
     description: "Conheça a plataforma e seus recursos principais",
     youtubeId: "dQw4w9WgXcQ", // Replace with real video IDs
     duration: "3:45",
@@ -109,7 +109,7 @@ export const OnboardingVideos = ({ open, onOpenChange, onComplete }: OnboardingV
 
           <div className="grid gap-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Assista aos vídeos tutoriais para aprender a usar todas as funcionalidades do DentalAI.
+              Assista aos vídeos tutoriais para aprender a usar todas as funcionalidades do exm-ai.com.
               Progresso: {watchedVideos.length}/{videos.length}
             </p>
 

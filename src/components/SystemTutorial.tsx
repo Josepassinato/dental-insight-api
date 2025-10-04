@@ -65,7 +65,7 @@ export function SystemTutorial({ onComplete }: SystemTutorialProps) {
       content: (
         <div className="space-y-4">
           <h3 className="font-bold text-lg">✅ Tutorial Concluído!</h3>
-          <p>Você está pronto para usar o DentalAI!</p>
+          <p>Você está pronto para usar o exm-ai.com!</p>
           <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg space-y-2">
             <p className="font-semibold">Próximos passos:</p>
             <ol className="list-decimal list-inside space-y-1 text-sm">
@@ -126,7 +126,7 @@ export function SystemTutorial({ onComplete }: SystemTutorialProps) {
             <div className="mx-auto mb-4 h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
               <BookOpen className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Bem-vindo ao DentalAI! 🦷</CardTitle>
+            <CardTitle className="text-2xl">Bem-vindo ao exm-ai.com! 🦷</CardTitle>
             <CardDescription className="text-base mt-2">
               Sistema de análise de imagens dentais com inteligência artificial
             </CardDescription>

@@ -140,7 +140,7 @@ const Help = () => {
                 Central de Ajuda
               </h1>
               <p className="text-sm text-muted-foreground">
-                Aprenda a usar todas as funcionalidades do DentalAI
+                Aprenda a usar todas as funcionalidades do exm-ai.com
               </p>
             </div>
           </div>

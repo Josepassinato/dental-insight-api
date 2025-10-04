@@ -15,7 +15,7 @@ export const OnboardingTour = ({ onComplete, autoStart = true }: OnboardingTourP
   const steps: Step[] = [
     {
       target: "body",
-      content: "Bem-vindo ao DentalAI! Vamos fazer um tour rápido pelas principais funcionalidades.",
+      content: "Bem-vindo ao exm-ai.com! Vamos fazer um tour rápido pelas principais funcionalidades.",
       placement: "center",
       disableBeacon: true,
     },

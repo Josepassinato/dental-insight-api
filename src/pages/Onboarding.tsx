@@ -88,7 +88,7 @@ export default function Onboarding() {
 
         toast({
           title: "Onboarding concluído! 🎉",
-          description: "Você está pronto para usar o DentalAI.",
+          description: "Você está pronto para usar o exm-ai.com.",
         });
 
         navigate("/dashboard");
@@ -107,7 +107,7 @@ export default function Onboarding() {
             <Sparkles className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-3xl">
-            {currentStep === "welcome" && "Bem-vindo ao DentalAI!"}
+            {currentStep === "welcome" && "Bem-vindo ao exm-ai.com!"}
             {currentStep === "tour" && "Tour Guiado"}
             {currentStep === "videos" && "Vídeos Tutoriais"}
             {currentStep === "complete" && "Tudo Pronto!"}
@@ -196,7 +196,7 @@ export default function Onboarding() {
               <div>
                 <h3 className="text-xl font-semibold mb-2">Parabéns!</h3>
                 <p className="text-muted-foreground">
-                  Você completou o onboarding e está pronto para usar todas as funcionalidades do DentalAI.
+                  Você completou o onboarding e está pronto para usar todas as funcionalidades do exm-ai.com.
                 </p>
               </div>
               <Button onClick={handleFinishOnboarding} size="lg" className="w-full">
