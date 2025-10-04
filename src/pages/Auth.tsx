@@ -304,6 +304,16 @@ const Auth = () => {
               )}
             </Button>
           </div>
+
+          {/* Admin access link */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => navigate("/admin/login")}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Acesso administrativo
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
